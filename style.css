@@ -1,0 +1,430 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+:root{font-family:'DM Sans',Arial,sans-serif;color:#20231f;background:#f5f6f3;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}.app-shell{min-height:100vh}.sidebar{width:250px;background:#20251f;color:#fff;position:fixed;inset:0 auto 0 0;padding:25px 16px;display:flex;flex-direction:column;z-index:5}.brand{display:flex;align-items:center;gap:11px;padding:0 9px 38px}.brand b{display:block;letter-spacing:1.5px;font-size:14px}.brand small{display:block;color:#b5b9b0;letter-spacing:2px;font-size:10px;margin-top:3px}.brand-mark{width:42px;height:42px;border-radius:13px;background:#fbc315;color:#20251f;font-weight:900;font-size:24px;display:grid;place-items:center}.nav-label,.eyebrow{font-size:10px;font-weight:800;letter-spacing:1.4px;color:#92998e}.nav-label{padding:0 12px 12px}.nav-item{border:0;background:transparent;color:#c8cdc5;padding:12px;border-radius:9px;display:flex;align-items:center;gap:12px;text-align:left;width:100%;font-size:13px;margin:2px 0}.nav-item:hover,.nav-item.active{background:#343b32;color:#fbc315}.sidebar-bottom{margin-top:auto}.user-chip{display:flex;align-items:center;gap:10px;padding:12px 7px;border-top:1px solid #3a4038;margin-bottom:8px}.avatar,.row-avatar{width:34px;height:34px;border-radius:50%;background:#fbc315;color:#252a23;display:grid;place-items:center;font-weight:800}.user-meta{min-width:0}.user-meta b,.user-meta small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:155px}.user-meta b{font-size:12px}.user-meta small{font-size:10px;color:#aeb4aa;margin-top:3px}.main{margin-left:250px;padding:0 38px;max-width:1700px}.topbar{height:91px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e6e8e2}.topbar h2{font-size:20px;margin:3px 0 0}.topbar .eyebrow{color:#9b9f95}.icon-btn{border:0;background:transparent;color:#62685f;padding:9px;border-radius:8px;display:inline-flex}.icon-btn:hover{background:#eceee8}.mobile-menu,.mobile-close{display:none}.welcome{display:flex;align-items:center;justify-content:space-between;padding:30px 0 23px}.welcome h1{font-size:25px;margin:5px 0}.welcome p:not(.eyebrow){font-size:13px;color:#73796f;margin:0}.primary{background:#fbc315;color:#24271f;border:0;border-radius:8px;padding:11px 15px;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;gap:8px}.primary:hover{background:#eeb900}.primary:disabled{opacity:.6}.primary.full{width:100%;margin-top:8px}.secondary{background:#f0f1ed;border:1px solid #e2e5dd;color:#41473e;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:700}.small{padding:7px 11px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:24px}.stat-card,.panel{background:#fff;border:1px solid #e9ebe5;border-radius:12px}.stat-card{padding:18px}.stat-icon{width:35px;height:35px;background:#fff6d6;color:#a77d00;border-radius:9px;display:grid;place-items:center;margin-bottom:14px}.stat-card span{display:block;color:#777d73;font-size:11px}.stat-card strong{display:block;font-size:21px;margin-top:5px}.panel{padding:22px;margin-bottom:24px}.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.panel-head h3{margin:0;font-size:16px}.muted{color:#858b80;font-size:11px}.panel-head p{margin:5px 0 0}.text-btn{border:0;background:transparent;color:#9b7600;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:700px}th{text-align:left;color:#8b9187;font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;padding:12px 10px;border-bottom:1px solid #eceee9}td{padding:14px 10px;border-bottom:1px solid #f0f1ed;font-size:11px;color:#51574e}td b{color:#252a23}.status-select{border:1px solid #e7e9e2;background:#f8f9f6;border-radius:6px;padding:6px;font-size:10px;max-width:150px}.searchbox{display:flex;align-items:center;gap:9px;background:#f8f9f6;border:1px solid #e8eae4;border-radius:8px;padding:0 12px;margin-bottom:17px;color:#8b9187;max-width:420px}.searchbox input{border:0;background:transparent;outline:0;padding:11px 0;width:100%;font-size:12px}.data-list{display:flex;flex-direction:column}.data-row{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid #eff0ec}.row-avatar{background:#f3f4ef;color:#72796e}.grow{flex:1;min-width:0}.grow b,.grow small{display:block}.grow b{font-size:12px}.grow small{font-size:10px;color:#858b80;margin-top:4px}.empty{padding:30px;text-align:center;color:#92988e;font-size:12px;display:flex;align-items:center;justify-content:center;gap:10px}.main footer{padding:15px 0 25px;text-align:center;color:#a0a59b;font-size:10px}.main footer span{padding:0 5px}.login-wrap,.setup-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:#f4f5f1}.login-card,.setup-card{width:min(420px,100%);background:white;padding:36px;border:1px solid #e8eae4;border-radius:16px;box-shadow:0 15px 50px #1d27140d}.login-card .brand-mark,.setup-card .brand-mark{margin-bottom:22px}.login-card h1,.setup-card h1{margin:5px 0;font-size:27px}.login-card>p,.setup-card>p{font-size:12px;color:#7c8278;line-height:1.6}.login-card label,.form-grid label{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:700;color:#565d52;margin:14px 0}.login-card input,.form-grid input,.form-grid select,.form-grid textarea{border:1px solid #e2e5dd;border-radius:8px;padding:11px;background:#fff;outline:none;font-size:12px;color:#282d26;width:100%}.login-card input:focus,.form-grid input:focus,.form-grid select:focus,.form-grid textarea:focus{border-color:#d8aa00;box-shadow:0 0 0 3px #fbc31522}.login-card small{display:block;text-align:center;margin-top:17px}.error{color:#b42318;font-size:11px}.setup-card pre{white-space:pre-wrap;background:#242a22;color:#fbc315;padding:14px;border-radius:8px;font-size:11px}.modal-backdrop{position:fixed;inset:0;background:#1118;z-index:10;display:grid;place-items:center;padding:18px}.modal{background:white;width:min(720px,100%);max-height:92vh;overflow:auto;border-radius:14px;padding:23px;box-shadow:0 20px 80px #0003}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.modal-head h3{margin:4px 0;font-size:19px}.modal-head .eyebrow{margin:0}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.form-grid label{margin:8px 0}.wide{grid-column:1/-1}.form-grid textarea{min-height:75px;resize:vertical}.form-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:12px}.item-editor{background:#f8f9f6;border:1px solid #e9ebe5;border-radius:9px;padding:13px;margin-top:8px}.item-title{display:flex;justify-content:space-between;align-items:center;font-size:12px}.item-fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:9px;border-top:1px solid #e6e9e1;margin-top:10px;padding-top:7px}.item-fields label{margin:5px 0}.item-fields .wide{grid-column:1/-1}.remove-btn{border:0;background:transparent;color:#b42318;font-size:10px;justify-self:start}.order-total{display:flex;justify-content:space-between;padding:13px;background:#fff8df;border-radius:8px;font-size:12px}.order-total b{font-size:17px}.notice,.error-banner{padding:11px 14px;border-radius:8px;margin:14px 0;font-size:12px;display:flex;justify-content:space-between}.notice{background:#eaf7eb;color:#276333}.error-banner{background:#fff0ee;color:#a42d20}.error-banner button{border:0;background:transparent;color:inherit}.scrim{display:none}
+@media(max-width:900px){.sidebar{transform:translateX(-100%);transition:transform .2s}.sidebar.show{transform:translateX(0)}.mobile-menu{display:inline-flex;margin-right:8px}.mobile-close{display:inline-flex;margin-left:auto;color:white}.scrim{display:block;position:fixed;inset:0;background:#0006;z-index:4}.main{margin-left:0;padding:0 22px}.topbar{height:76px;justify-content:flex-start;gap:8px}.topbar>button:last-child{margin-left:auto}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.main{padding:0 13px}.welcome{align-items:flex-start;gap:12px;flex-direction:column}.welcome h1{font-size:22px}.stats{gap:9px}.stat-card{padding:13px}.stat-card strong{font-size:17px}.panel{padding:15px}.panel-head{align-items:flex-start;gap:10px}.panel-head .primary{white-space:nowrap;padding:10px}.form-grid{grid-template-columns:1fr}.wide{grid-column:1}.item-fields{grid-template-columns:1fr 1fr}.item-fields .wide{grid-column:1/-1}.modal{padding:17px}.login-card,.setup-card{padding:26px}}
+
+/* =========================================
+   CAMPOS DE PRODUÇÃO E ANEXO DE MOCKUP
+========================================= */
+
+.production-editor {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.production-editor h4 {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.upload-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px dashed #999;
+  border-radius: 8px;
+}
+
+.file-picked {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.image-modal img {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  margin: auto;
+}
+
+/* A ficha não aparece na tela normal */
+.print-sheet {
+  display: none;
+}
+
+/* =========================================
+   IMPRESSÃO DA FICHA DE PRODUÇÃO - A4
+========================================= */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .app-shell {
+    display: block !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .app-shell > :not(.print-sheet) {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block !important;
+    width: 100% !important;
+    color: #111 !important;
+    background: #fff !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 10pt !important;
+  }
+
+  .print-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 2px solid #222;
+    padding-bottom: 10px;
+  }
+
+  .print-head h1 {
+    font-size: 18pt;
+    margin: 0;
+  }
+
+  .print-head strong {
+    margin-left: auto;
+  }
+
+  .print-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .print-grid > div {
+    border: 1px solid #bbb;
+    padding: 7px;
+    overflow-wrap: anywhere;
+  }
+
+  .print-grid b,
+  .print-grid span {
+    display: block;
+  }
+
+  .print-grid b {
+    font-size: 8pt;
+    color: #555;
+    text-transform: uppercase;
+  }
+
+  .print-grid span {
+    margin-top: 3px;
+    white-space: pre-wrap;
+  }
+
+  .print-sheet h2 {
+    font-size: 12pt;
+    margin: 15px 0 7px;
+    border-bottom: 1px solid #aaa;
+    padding-bottom: 4px;
+  }
+
+  .print-sheet table {
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: collapse !important;
+  }
+
+  .print-sheet th,
+  .print-sheet td {
+    color: #111 !important;
+    font-size: 8.5pt;
+    padding: 6px;
+    border: 1px solid #ccc;
+  }
+
+  .print-mockup {
+    display: block;
+    max-width: 100%;
+    max-height: 95mm;
+    object-fit: contain;
+    margin: 8px auto;
+  }
+
+  .print-notes {
+    border: 1px solid #bbb;
+    padding: 8px;
+    margin-top: 12px;
+    min-height: 25mm;
+  }
+
+  .signature-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 14px;
+    margin-top: 25px;
+    font-size: 9pt;
+  }
+
+  .signature-row > div {
+    border-top: 1px solid #333;
+    padding-top: 6px;
+  }
+
+  .print-sheet img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+
+/* CONTROLE FINANCEIRO DA OS */
+
+.payment-editor {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+}
+
+.payment-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.payment-values > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--background, #f5f5f5);
+}
+
+.payment-values > div span {
+  font-size: 12px;
+  color: #777;
+}
+
+.payment-values > div strong {
+  font-size: 17px;
+}
+
+.payment-values label {
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .payment-values {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================
+   MÓDULO FINANCEIRO
+========================================= */
+.finance-secondary-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: -10px;
+}
+.finance-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 7px 10px;
+  border-radius: 20px;
+  background: #fff6d6;
+  color: #8a6800;
+  font-size: 11px;
+  font-weight: 800;
+}
+.finance-balance { color: #a77d00; white-space: nowrap; }
+.finance-status {
+  display: inline-block;
+  padding: 5px 8px;
+  border-radius: 20px;
+  background: #fff6d6;
+  color: #8a6800;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.finance-status.overdue {
+  background: #fff0ee;
+  color: #b42318;
+}
+.finance-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 17px;
+  margin: 0 0 24px;
+  border: 1px solid #e9ebe5;
+  border-radius: 10px;
+  background: #fff;
+  color: #73796f;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.finance-note > svg { flex: 0 0 auto; color: #a77d00; margin-top: 2px; }
+.finance-note b { color: #343a31; font-size: 12px; }
+.finance-note p { margin: 4px 0 0; }
+@media(max-width:560px) {
+  .finance-secondary-stats { grid-template-columns: 1fr; margin-top: -8px; }
+  .finance-table { min-width: 760px; }
+  .finance-note { padding: 13px; }
+}
+
+/* =========================================
+   KALANGO GESTÃO 0.4 - CONTROLE DE PRODUÇÃO
+========================================= */
+.production-stage-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 22px;
+}
+.production-stage-card {
+  min-width: 0;
+  padding: 15px 16px;
+  border: 1px solid #e9ebe5;
+  border-radius: 10px;
+  background: #fff;
+}
+.production-stage-card span {
+  display: block;
+  color: #777d73;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.production-stage-card strong {
+  display: block;
+  margin-top: 7px;
+  color: #252a23;
+  font-size: 23px;
+}
+.production-table { min-width: 900px; }
+.production-table td { vertical-align: middle; }
+.production-stage-select {
+  width: 190px;
+  max-width: 100%;
+  padding: 8px 9px;
+  border: 1px solid #e2e5dd;
+  border-radius: 7px;
+  background: #fffdf5;
+  color: #343a31;
+  font-size: 11px;
+}
+.production-stage-select:focus {
+  outline: 2px solid #fbc31566;
+  border-color: #d8aa00;
+}
+.production-detail-cell { min-width: 190px; }
+.production-detail-cell b,
+.production-detail-cell small {
+  display: block;
+}
+.production-detail-cell small {
+  margin-top: 4px;
+  color: #858b80;
+  line-height: 1.4;
+}
+.production-overdue {
+  color: #b42318;
+  font-weight: 800;
+}
+.production-alert {
+  display: block;
+  margin-top: 4px;
+  color: #b42318;
+  font-size: 10px;
+  font-weight: 700;
+}
+.production-order-status {
+  display: inline-block;
+  padding: 5px 8px;
+  border-radius: 20px;
+  background: #f0f1ed;
+  color: #51574e;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+@media(max-width:900px) {
+  .production-stage-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media(max-width:560px) {
+  .production-stage-cards { gap: 8px; }
+  .production-stage-card { padding: 12px; }
+  .production-stage-card span { font-size: 10px; }
+  .production-stage-card strong { font-size: 20px; }
+}
+
+/* KALANGO GESTAO 0.5 - CUSTOS E DESPESAS */
+.finance-stats .stat-card strong { overflow-wrap: anywhere; }
+.finance-table td .remove-btn { padding: 5px 7px; }
+.finance-filters { max-width: 620px; }
+.form-actions.wide { grid-column: 1 / -1; }
+.payment-period-total + .muted { display: block; margin: 8px 0 14px; line-height: 1.5; }
+@media(max-width:560px){
+  .finance-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .finance-stats .stat-card strong { font-size: 15px; }
+}
+
+/* KALANGO GESTAO 1.0 - ESTOQUE E RELATORIOS */
+.finance-count { white-space: nowrap; }
+.finance-status.overdue { background: #fff0ed; color: #a52d20; }
+@media (max-width: 560px) {
+  .finance-count { font-size: 10px; }
+  .finance-filters { grid-template-columns: 1fr; }
+}
+
+
+/* AJUSTES FINAIS v1.0.1 — filtros de estoque e impressão de relatórios */
+.stock-filters { margin: 0 0 14px; }
+.stock-filters input { width: min(100%, 440px); border: 1px solid #e2e5dd; border-radius: 8px; padding: 11px 12px; background: #fff; font-size: 12px; }
+.stock-filters input:focus { outline: none; border-color: #d8aa00; box-shadow: 0 0 0 3px #fbc31522; }
+
+@media print {
+  body:has(.app-shell[data-page="reports"]) { background: #fff !important; }
+  .app-shell[data-page="reports"] .sidebar,
+  .app-shell[data-page="reports"] .topbar,
+  .app-shell[data-page="reports"] .report-print-button,
+  .app-shell[data-page="reports"] .finance-filters,
+  .app-shell[data-page="reports"] .mobile-menu,
+  .app-shell[data-page="reports"] .notice,
+  .app-shell[data-page="reports"] .error-banner,
+  .app-shell[data-page="reports"] footer { display: none !important; }
+  .app-shell[data-page="reports"] .main { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  .app-shell[data-page="reports"] .main > * { break-inside: avoid; }
+  .app-shell[data-page="reports"] .panel { box-shadow: none !important; border: 1px solid #ddd !important; margin: 0 0 12px !important; padding: 12px !important; }
+  .app-shell[data-page="reports"] .table-wrap { overflow: visible !important; }
+  .app-shell[data-page="reports"] table { min-width: 0 !important; width: 100% !important; }
+  .app-shell[data-page="reports"] th,
+  .app-shell[data-page="reports"] td { font-size: 8pt !important; padding: 6px 5px !important; color: #111 !important; }
+  .app-shell[data-page="reports"] .welcome { padding: 0 0 12px !important; }
+  @page { size: A4 landscape; margin: 10mm; }
+}
