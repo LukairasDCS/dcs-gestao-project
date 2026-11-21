@@ -1,0 +1,86 @@
+| table_name          | column_name             | data_type                | is_nullable | column_default    |
+| ------------------- | ----------------------- | ------------------------ | ----------- | ----------------- |
+| clients             | id                      | uuid                     | NO          | gen_random_uuid() |
+| clients             | name                    | text                     | NO          | null              |
+| clients             | phone                   | text                     | YES         | null              |
+| clients             | whatsapp                | text                     | YES         | null              |
+| clients             | document                | text                     | YES         | null              |
+| clients             | email                   | text                     | YES         | null              |
+| clients             | address                 | text                     | YES         | null              |
+| clients             | notes                   | text                     | YES         | null              |
+| clients             | created_at              | timestamp with time zone | YES         | now()             |
+| general_expenses    | id                      | uuid                     | NO          | gen_random_uuid() |
+| general_expenses    | category                | text                     | NO          | 'Outros'::text    |
+| general_expenses    | description             | text                     | NO          | null              |
+| general_expenses    | amount                  | numeric                  | NO          | null              |
+| general_expenses    | expense_date            | date                     | NO          | CURRENT_DATE      |
+| general_expenses    | payment_method          | text                     | NO          | 'Pix'::text       |
+| general_expenses    | notes                   | text                     | YES         | null              |
+| general_expenses    | created_at              | timestamp with time zone | NO          | now()             |
+| general_expenses    | created_by              | uuid                     | YES         | null              |
+| inventory_items     | id                      | uuid                     | NO          | gen_random_uuid() |
+| inventory_items     | name                    | text                     | NO          | null              |
+| inventory_items     | category                | text                     | NO          | 'Outros'::text    |
+| inventory_items     | unit                    | text                     | NO          | 'un'::text        |
+| inventory_items     | minimum_stock           | numeric                  | NO          | 0                 |
+| inventory_items     | notes                   | text                     | YES         | null              |
+| inventory_items     | active                  | boolean                  | NO          | true              |
+| inventory_items     | created_at              | timestamp with time zone | NO          | now()             |
+| inventory_items     | created_by              | uuid                     | YES         | null              |
+| inventory_movements | id                      | uuid                     | NO          | gen_random_uuid() |
+| inventory_movements | item_id                 | uuid                     | NO          | null              |
+| inventory_movements | movement_type           | text                     | NO          | null              |
+| inventory_movements | quantity                | numeric                  | NO          | null              |
+| inventory_movements | unit_cost               | numeric                  | NO          | 0                 |
+| inventory_movements | movement_date           | date                     | NO          | CURRENT_DATE      |
+| inventory_movements | description             | text                     | NO          | ''::text          |
+| inventory_movements | notes                   | text                     | YES         | null              |
+| inventory_movements | created_at              | timestamp with time zone | NO          | now()             |
+| inventory_movements | created_by              | uuid                     | YES         | null              |
+| products            | id                      | uuid                     | NO          | gen_random_uuid() |
+| products            | name                    | text                     | NO          | null              |
+| products            | category                | text                     | YES         | null              |
+| products            | description             | text                     | YES         | null              |
+| products            | base_price              | numeric                  | YES         | 0                 |
+| products            | active                  | boolean                  | YES         | true              |
+| products            | created_at              | timestamp with time zone | YES         | now()             |
+| work_order_costs    | id                      | uuid                     | NO          | gen_random_uuid() |
+| work_order_costs    | work_order_id           | uuid                     | NO          | null              |
+| work_order_costs    | category                | text                     | NO          | 'Outros'::text    |
+| work_order_costs    | description             | text                     | NO          | null              |
+| work_order_costs    | quantity                | numeric                  | NO          | 1                 |
+| work_order_costs    | unit_cost               | numeric                  | NO          | 0                 |
+| work_order_costs    | total_cost              | numeric                  | NO          | 0                 |
+| work_order_costs    | cost_date               | date                     | NO          | CURRENT_DATE      |
+| work_order_costs    | notes                   | text                     | YES         | null              |
+| work_order_costs    | created_at              | timestamp with time zone | NO          | now()             |
+| work_order_costs    | created_by              | uuid                     | YES         | null              |
+| work_order_items    | id                      | uuid                     | NO          | gen_random_uuid() |
+| work_order_items    | work_order_id           | uuid                     | NO          | null              |
+| work_order_items    | product_id              | uuid                     | YES         | null              |
+| work_order_items    | description             | text                     | NO          | null              |
+| work_order_items    | quantity                | integer                  | NO          | 1                 |
+| work_order_items    | unit_price              | numeric                  | YES         | 0                 |
+| work_order_items    | size_breakdown          | jsonb                    | YES         | '{}'::jsonb       |
+| work_order_items    | created_at              | timestamp with time zone | YES         | now()             |
+| work_order_payments | id                      | uuid                     | NO          | gen_random_uuid() |
+| work_order_payments | work_order_id           | uuid                     | NO          | null              |
+| work_order_payments | amount                  | numeric                  | NO          | null              |
+| work_order_payments | paid_at                 | date                     | NO          | CURRENT_DATE      |
+| work_order_payments | payment_method          | text                     | NO          | 'Pix'::text       |
+| work_order_payments | notes                   | text                     | YES         | null              |
+| work_order_payments | created_by              | uuid                     | YES         | null              |
+| work_order_payments | created_at              | timestamp with time zone | NO          | now()             |
+| work_orders         | id                      | uuid                     | NO          | gen_random_uuid() |
+| work_orders         | number                  | bigint                   | NO          | null              |
+| work_orders         | client_id               | uuid                     | YES         | null              |
+| work_orders         | status                  | text                     | NO          | 'Orçamento'::text |
+| work_orders         | due_date                | date                     | YES         | null              |
+| work_orders         | notes                   | text                     | YES         | null              |
+| work_orders         | total                   | numeric                  | YES         | 0                 |
+| work_orders         | payment_status          | text                     | YES         | 'Pendente'::text  |
+| work_orders         | created_at              | timestamp with time zone | YES         | now()             |
+| work_orders         | production_details      | jsonb                    | NO          | '{}'::jsonb       |
+| work_orders         | mockup_url              | text                     | YES         | null              |
+| work_orders         | amount_paid             | numeric                  | NO          | 0                 |
+| work_orders         | opening_amount_received | numeric                  | NO          | 0                 |
