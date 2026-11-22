@@ -299,7 +299,7 @@
 }
 
 /* =========================================
-   KALANGO GESTÃO 0.4 - CONTROLE DE PRODUÇÃO
+   DCS CONFECÇÃO GESTÃO 0.4 - CONTROLE DE PRODUÇÃO
 ========================================= */
 .production-stage-cards {
   display: grid;
@@ -383,7 +383,7 @@
   .production-stage-card strong { font-size: 20px; }
 }
 
-/* KALANGO GESTAO 0.5 - CUSTOS E DESPESAS */
+/* DCS CONFECÇÃO GESTÃO 0.5 - CUSTOS E DESPESAS */
 .finance-stats .stat-card strong { overflow-wrap: anywhere; }
 .finance-table td .remove-btn { padding: 5px 7px; }
 .finance-filters { max-width: 620px; }
@@ -394,7 +394,7 @@
   .finance-stats .stat-card strong { font-size: 15px; }
 }
 
-/* KALANGO GESTAO 1.0 - ESTOQUE E RELATORIOS */
+/* DCS CONFECÇÃO GESTÃO 1.0 - ESTOQUE E RELATORIOS */
 .finance-count { white-space: nowrap; }
 .finance-status.overdue { background: #fff0ed; color: #a52d20; }
 @media (max-width: 560px) {
@@ -428,3 +428,118 @@
   .app-shell[data-page="reports"] .welcome { padding: 0 0 12px !important; }
   @page { size: A4 landscape; margin: 10mm; }
 }
+
+
+/* DCS CONFECÇÃO GESTÃO v1.2 — grade por item e controle de produção */
+.size-grid-editor{grid-column:1/-1;background:#fff;border:1px solid #e5e8df;border-radius:9px;padding:12px;margin:4px 0 8px}
+.size-grid-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:12px}
+.size-grid-heading strong{background:#fff4c9;color:#705400;border-radius:20px;padding:5px 10px;font-size:11px;white-space:nowrap}
+.size-grid-fields{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.size-grid-fields label{display:flex;flex-direction:column;gap:5px;margin:0;font-size:10px;font-weight:800;text-align:center;color:#697064}
+.size-grid-fields input{padding:9px 5px;text-align:center;font-weight:700;min-width:0}
+.legacy-size-note{display:block;margin-top:9px;color:#9a6700;font-size:10px;line-height:1.4}
+.production-summary-stats{margin-top:0}
+.production-filters{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 15px}
+.production-filters label{margin:0}
+.production-filters input,.production-filters select{min-height:38px}
+.production-detail-cell small{display:block;margin-top:5px;line-height:1.4}
+.production-overdue{color:#b42318;font-weight:800}
+.production-alert{display:block;font-size:9px;font-weight:800;color:#b42318;margin-top:3px;text-transform:uppercase}
+.print-items-table{table-layout:auto}
+.print-items-table th,.print-items-table td{text-align:center;padding:7px 5px;font-size:9px}
+.print-items-table th:first-child,.print-items-table td:first-child{text-align:left;min-width:115px}
+.print-total-row{background:#f4f5f1;font-weight:800}
+.print-checklist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 18px;padding:10px 0 14px;font-size:10px}
+.print-checklist>div{display:flex;align-items:center;gap:8px;min-height:22px}
+.print-check-box{display:inline-block;width:13px;height:13px;border:1px solid #333;flex:0 0 13px}
+.print-history-table th,.print-history-table td{font-size:9px;padding:6px}
+@media(max-width:900px){.production-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.size-grid-fields{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.size-grid-fields input{padding:9px 3px}.production-filters{grid-template-columns:1fr 1fr}.production-summary-stats{grid-template-columns:1fr 1fr}.production-summary-stats .stat-card:last-child{grid-column:1/-1}.print-checklist{grid-template-columns:1fr}}
+@media print{
+  .print-sheet{font-size:9px;color:#111}
+  .print-sheet h2{font-size:12px;margin:13px 0 6px;padding-bottom:4px;border-bottom:1px solid #888;break-after:avoid}
+  .print-head{margin-bottom:10px}
+  .print-grid{gap:6px 10px}
+  .print-grid>div{padding:5px 6px}
+  .print-items-table{min-width:0!important;width:100%;table-layout:fixed}
+  .print-items-table th,.print-items-table td{font-size:8px;padding:4px 2px;overflow-wrap:anywhere}
+  .print-items-table th:first-child,.print-items-table td:first-child{width:23%;min-width:0}
+  .print-checklist,.print-history-table{break-inside:avoid}
+  .print-mockup{max-height:90mm;object-fit:contain}
+}
+
+
+/* Ficha de corte: segunda folha do mesmo documento de impressão */
+.cut-sheet-page { margin-top: 28px; }
+.cut-sheet-identification { display:grid; grid-template-columns:2fr 1fr 1fr; gap:8px 14px; padding:10px 0; font-size:10px; }
+.cut-sheet-identification b { margin-right:4px; }
+.cut-items-table th:first-child,.cut-items-table td:first-child { width:34%; }
+.cut-checklist { display:grid; grid-template-columns:1fr 1fr; gap:12px 18px; padding:10px 0 16px; font-size:10px; }
+.cut-checklist > div { display:flex; align-items:center; gap:8px; min-height:22px; }
+.cut-legacy-note { border:1px solid #b8860b; padding:8px; font-size:9px; }
+.cut-notes { margin-top:14px; font-size:10px; }
+.cut-notes > div { height:24px; border-bottom:1px solid #999; }
+.cut-signatures { display:grid; gap:22px; margin-top:28px; font-size:10px; }
+@media print {
+  .cut-sheet-page { break-before:page; page-break-before:always; margin-top:0; }
+  .cut-sheet-page .print-head { margin-bottom:14px; }
+  .cut-sheet-page h2 { margin-top:16px; }
+  .cut-items-table th:first-child,.cut-items-table td:first-child { width:34%; }
+  .cut-checklist { break-inside:avoid; }
+}
+
+/* v1.3 — produção, relatórios e responsividade */
+.production-responsible-input{width:145px;max-width:100%;border:1px solid #e2e5dd;border-radius:7px;padding:8px;font-size:11px;background:#fff;color:#282d26}
+.production-responsible-input:focus{outline:2px solid #fbc31555;border-color:#d8aa00}
+.report-breakdown-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:24px}
+.report-status-row{display:flex;justify-content:space-between;align-items:center;padding:11px 3px;border-bottom:1px solid #eff0ec;font-size:12px;color:#555c51}
+.report-status-row strong{background:#fff6d6;border-radius:20px;padding:4px 10px;color:#705600}
+@media(max-width:760px){.report-breakdown-grid{grid-template-columns:1fr}.production-responsible-input{width:125px}}
+@media print{.report-breakdown-grid{break-inside:avoid}}
+
+/* DCS CONFECÇÃO v1.4 — CRM, orçamento e acompanhamento público */
+.public-track-wrap{min-height:100vh;background:#f5f6f3;display:grid;place-items:center;padding:22px}
+.public-track-card{width:min(520px,100%);background:#fff;border:1px solid #e7e9e2;border-radius:18px;padding:30px;box-shadow:0 15px 50px #1d27140d}
+.public-track-card .brand-mark{margin-bottom:18px}
+.public-track-card h1{font-size:23px;margin:6px 0 20px}
+.public-track-number{font-size:13px;color:#747b70;margin:12px 0 5px}
+.public-track-status{font-size:20px;font-weight:800;color:#272d24;margin-bottom:14px}
+.public-track-progress{height:9px;background:#eceee8;border-radius:20px;overflow:hidden;margin:22px 0 12px}
+.public-track-progress span{display:block;height:100%;background:#fbc315;border-radius:20px}
+.public-track-card small{color:#858b80;line-height:1.5}
+.crm-profile-modal{width:min(850px,100%)}
+.crm-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:10px 0 22px}
+.crm-summary>div{padding:13px;background:#f7f8f5;border:1px solid #e9ebe5;border-radius:9px}
+.crm-summary small,.crm-summary b{display:block}.crm-summary small{font-size:10px;color:#7c8378}.crm-summary b{font-size:17px;margin-top:5px}
+.quote-print-sheet{display:none}
+.quote-document{font-family:Arial,sans-serif;color:#171a16;background:#fff;padding:10mm;max-width:190mm;margin:auto}
+.quote-document header{display:flex;align-items:center;gap:14px;border-bottom:2px solid #252a23;padding-bottom:14px}
+.quote-document header h1{font-size:22px;margin:0}.quote-document header p{font-size:11px;letter-spacing:1px;margin:5px 0 0}.quote-document header strong{margin-left:auto;font-size:16px}
+.quote-client{font-size:11px;line-height:1.9;margin:22px 0}
+.quote-document table{width:100%;min-width:0;border-collapse:collapse}.quote-document th,.quote-document td{border-bottom:1px solid #ddd;padding:10px 8px;font-size:11px;text-align:left}
+.quote-total{display:flex;justify-content:flex-end;gap:18px;padding:20px 8px;font-size:15px;border-bottom:1px solid #ddd}
+.quote-terms{font-size:10px;line-height:1.6;margin-top:24px;color:#555}.quote-sign{text-align:center;margin-top:65px;padding-top:10px;border-top:1px solid #777;font-size:11px}
+@media(max-width:560px){.public-track-card{padding:23px}.crm-summary{grid-template-columns:1fr}.crm-summary b{font-size:15px}}
+@media print{
+  body:has(.quote-print-sheet) .app-shell{display:none!important}
+  body:has(.quote-print-sheet) .quote-print-sheet{display:block!important;position:static!important;width:100%!important}
+  body:has(.quote-print-sheet) .quote-print-sheet .print-controls{display:none!important}
+  body:has(.quote-print-sheet) .quote-document{max-width:none!important;padding:0!important}
+  body:has(.quote-print-sheet) .quote-document tr{break-inside:avoid}
+  body:has(.quote-print-sheet) .quote-document table{min-width:0!important}
+  @page{size:A4;margin:15mm}
+}
+
+/* PORTAL DO CLIENTE — DCS CONFECÇÃO */
+.client-portal-wrap{min-height:100vh;background:#f5f6f3;padding:28px 18px 42px;color:#252a22}
+.client-portal{width:min(760px,100%);margin:0 auto}
+.client-portal-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:5px 0 24px;border-bottom:1px solid #e4e7df}
+.client-portal-brand{display:flex;align-items:center;gap:12px}.client-portal-brand b{display:block;font-size:13px;letter-spacing:.08em}.client-portal-brand small{display:block;margin-top:4px;font-size:9px;letter-spacing:.16em;color:#8a8f83}
+.client-portal-secure{font-size:11px;color:#777e71;background:#fff;border:1px solid #e7e9e2;border-radius:30px;padding:8px 12px}
+.client-portal-intro{padding:34px 2px 22px}.client-portal-intro .eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;color:#9b7900}.client-portal-intro h1{font-size:clamp(25px,5vw,34px);letter-spacing:-.04em;line-height:1.12;margin:9px 0 10px}.client-portal-intro>p:last-child{font-size:14px;color:#747b70;line-height:1.6;margin:0;max-width:560px}
+.client-portal-panel{background:#fff;border:1px solid #e7e9e2;border-radius:16px;padding:23px;margin:0 0 14px;box-shadow:0 8px 30px #1d271408}
+.client-order-top{display:flex;align-items:center;justify-content:space-between;gap:15px;padding-bottom:20px;border-bottom:1px solid #eef0eb}.portal-label{display:block;font-size:9px;font-weight:800;letter-spacing:.12em;color:#8b9185;margin-bottom:7px}.client-order-number{font-size:27px;letter-spacing:-.03em}.client-order-badge{display:inline-flex;align-items:center;border-radius:30px;padding:8px 12px;background:#fff4ce;color:#765900;font-size:11px;font-weight:800}.client-order-badge.delivered{background:#e8f5eb;color:#26723c}.client-order-badge.cancelled{background:#fff0ee;color:#a83226}
+.client-order-info{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px 0}.client-order-info b{font-size:14px}.portal-progress-area{padding-top:5px}.portal-progress-caption{display:flex;justify-content:space-between;font-size:11px;color:#73796f}.portal-progress-caption b{color:#30362d}.public-track-progress{height:9px;background:#eceee8;border-radius:20px;overflow:hidden;margin:10px 0 0}.public-track-progress span{display:block;height:100%;background:#fbc315;border-radius:20px;transition:width .25s ease}
+.portal-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.portal-section-heading h2{font-size:19px;margin:0}.portal-live-dot{font-size:10px;color:#43834d}.portal-live-dot:before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:#54a765;margin-right:7px}.portal-timeline{list-style:none;padding:0;margin:0}.portal-timeline li{position:relative;display:flex;align-items:flex-start;gap:13px;min-height:58px;color:#a0a59b}.portal-timeline li:not(:last-child):before{content:'';position:absolute;left:14px;top:30px;bottom:0;width:2px;background:#e7e9e2}.portal-timeline-marker{position:relative;z-index:1;display:grid;place-items:center;width:29px;height:29px;flex:0 0 29px;border:1px solid #e1e4dc;border-radius:50%;background:#fff;font-size:11px;font-weight:800}.portal-timeline li b{display:block;font-size:13px;padding-top:6px}.portal-timeline li small{display:block;color:#8b9185;font-size:10px;margin-top:5px}.portal-timeline li.completed{color:#4d8b56}.portal-timeline li.completed .portal-timeline-marker{background:#e8f5eb;border-color:#cce7d1;color:#26723c}.portal-timeline li.completed:not(:last-child):before{background:#b8d9be}.portal-timeline li.active{color:#33392f}.portal-timeline li.active .portal-timeline-marker{background:#fbc315;border-color:#fbc315;color:#332900;box-shadow:0 0 0 4px #fff7d8}.portal-timeline li.active b{font-weight:850}
+.client-portal-footer{text-align:center;padding:13px 5px 18px}.client-portal-footer p{font-size:11px;color:#858b80;margin:0 0 12px}.portal-refresh-button{border:1px solid #dedfd8;background:#fff;border-radius:9px;padding:11px 15px;color:#343a31;font-size:12px;font-weight:750;cursor:pointer}.portal-refresh-button:disabled{opacity:.6;cursor:wait}.client-portal-footer small{display:block;color:#a0a59b;font-size:10px;margin-top:9px}.client-portal-bottom{text-align:center;color:#a0a59b;font-size:10px;padding-top:10px}.client-portal-loading{display:flex;align-items:center;flex-direction:column;gap:10px;padding:42px 20px;color:#747b70}.client-portal-loading b{font-size:14px;color:#343a31}.client-portal-loading span{font-size:11px}.portal-spinner{width:25px;height:25px;border:3px solid #eceee8;border-top-color:#d4a900;border-radius:50%;animation:portalSpin .8s linear infinite}@keyframes portalSpin{to{transform:rotate(360deg)}}.client-portal-error{text-align:center;padding:35px 22px}.portal-error-icon{width:34px;height:34px;border-radius:50%;background:#fff0ee;color:#b42318;display:grid;place-items:center;font-weight:900;margin:0 auto 12px}.client-portal-error h2{font-size:17px;margin:0 0 8px}.client-portal-error p,.portal-cancelled-note p{font-size:12px;color:#777e71;line-height:1.6;margin:0}.portal-cancelled-note{border-color:#f0d7d3}.portal-cancelled-note b{display:block;color:#a83226;margin-bottom:7px}
+@media(max-width:560px){.client-portal-wrap{padding:16px 12px 30px}.client-portal-header{padding-bottom:17px}.client-portal-secure{font-size:9px;padding:7px 9px}.client-portal-intro{padding:27px 2px 18px}.client-portal-panel{padding:18px 16px;border-radius:13px}.client-order-top{align-items:flex-start;flex-direction:column;gap:10px}.client-order-number{font-size:25px}.client-order-info{gap:12px}.client-order-info b{font-size:12px}.portal-section-heading h2{font-size:17px}}

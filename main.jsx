@@ -6,7 +6,7 @@ import {
   LayoutDashboard, ClipboardList, Users, Package, LogOut, Plus, Search,
   Menu, X, RefreshCw, Printer, ChevronRight, CircleDollarSign, Clock3,
   CheckCircle2, AlertCircle, ImagePlus, Eye, Trash2, History, Wallet,
-  CalendarDays, Receipt, TrendingUp, Boxes, BarChart3, ArrowDownCircle
+  CalendarDays, Receipt, TrendingUp, BarChart3, FileText, MessageCircle, Link2, UserRound
 } from 'lucide-react'
 import './style.css'
 
@@ -45,6 +45,26 @@ const getProductionStage = order => {
   return 'Aguardando preparação'
 }
 
+const sizeKeys = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG']
+const getSizeTotal = sizes => sizeKeys.reduce((sum, size) => {
+  const value = Number(sizes?.[size]) || 0
+  return sum + (Number.isFinite(value) && value > 0 ? Math.floor(value) : 0)
+}, 0)
+const getItemQuantity = item => getSizeTotal(item?.size_breakdown) || Number(item?.quantity) || 0
+const getOrderItemsTotal = items => (items || []).reduce((sum, item) => {
+  return sum + getItemQuantity(item) * (Number(item?.unit_price) || 0)
+}, 0)
+const formatDuration = minutes => {
+  const value = Math.max(0, Math.floor(Number(minutes) || 0))
+  const days = Math.floor(value / 1440)
+  const hours = Math.floor((value % 1440) / 60)
+  const mins = value % 60
+  return [days ? `${days}d` : '', hours ? `${hours}h` : '', `${mins}min`].filter(Boolean).join(' ')
+}
+const elapsedMinutes = (from, to = new Date()) => from
+  ? Math.max(0, Math.floor((new Date(to).getTime() - new Date(from).getTime()) / 60000))
+  : null
+
 const emptyProduction = {
   fabric: 'Malha 30.1 penteada',
   fabricColor: '',
@@ -66,7 +86,7 @@ const emptyOrder = () => ({
   status: 'Orçamento',
   due_date: '',
   notes: '',
-  items: [{ product_id: '', description: '', quantity: 1, unit_price: 0 }],
+  items: [{ product_id: '', description: '', quantity: 0, unit_price: 0, size_breakdown: {} }],
   production: { ...emptyProduction },
   mockupFile: null,
   removeMockup: false
@@ -89,12 +109,6 @@ function App() {
   const [payments, setPayments] = useState([])
   const [orderCosts, setOrderCosts] = useState([])
   const [expenses, setExpenses] = useState([])
-  const [inventoryItems, setInventoryItems] = useState([])
-  const [stockMovements, setStockMovements] = useState([])
-  const [stockSearch, setStockSearch] = useState('')
-  const [stockMovementFilter, setStockMovementFilter] = useState('Todos')
-  const [stockForm, setStockForm] = useState({ name: '', category: 'Camisetas prontas', unit: 'un', minimum_stock: '0', notes: '' })
-  const [movementForm, setMovementForm] = useState({ item_id: '', movement_type: 'Entrada', quantity: '', unit_cost: '0', movement_date: localDate(), description: '', notes: '' })
   const [costForm, setCostForm] = useState({ work_order_id: '', category: 'Camisetas prontas', description: '', quantity: 1, unit_cost: '', cost_date: localDate(), notes: '' })
   const [expenseForm, setExpenseForm] = useState({ category: 'Energia', description: '', amount: '', expense_date: localDate(), payment_method: 'Pix', notes: '' })
 
@@ -106,6 +120,9 @@ function App() {
   const [password, setPassword] = useState('')
   const [mobileNav, setMobileNav] = useState(false)
   const [search, setSearch] = useState('')
+  const [productionFilterStage, setProductionFilterStage] = useState('Todas')
+  const [productionFilterClient, setProductionFilterClient] = useState('Todos')
+  const [productionFilterDue, setProductionFilterDue] = useState('Todos')
 
   const [modal, setModal] = useState('')
   const [editing, setEditing] = useState(null)
@@ -114,6 +131,11 @@ function App() {
 
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [mockupPreview, setMockupPreview] = useState(null)
+  const [selectedQuote, setSelectedQuote] = useState(null)
+  const [profileClient, setProfileClient] = useState(null)
+  const trackingToken = new URLSearchParams(window.location.search).get('acompanhar')
+  const [publicTracking, setPublicTracking] = useState({ loading: Boolean(trackingToken), data: null, error: '' })
+  const [publicTrackingUpdatedAt, setPublicTrackingUpdatedAt] = useState(null)
 
   const [financeFrom, setFinanceFrom] = useState(() => {
     const d = new Date()
@@ -153,12 +175,29 @@ function App() {
     if (session) loadAll()
   }, [session])
 
+  async function refreshPublicTracking(showLoading = true) {
+    if (!trackingToken || !supabase) return
+    if (showLoading) setPublicTracking(current => ({ ...current, loading: true, error: '' }))
+    const { data, error } = await supabase.rpc('get_public_order_tracking', { p_token: trackingToken })
+    if (error || !data) {
+      setPublicTracking({ loading: false, data: null, error: 'Este link não é válido ou o acompanhamento não está disponível. Solicite um novo link à DCS CONFECÇÃO.' })
+    } else {
+      setPublicTracking({ loading: false, data, error: '' })
+      setPublicTrackingUpdatedAt(new Date())
+    }
+  }
+
+  useEffect(() => {
+    if (!trackingToken || !supabase) return
+    refreshPublicTracking()
+  }, [trackingToken])
+
   async function loadAll() {
     setBusy(true)
     setError('')
 
     try {
-      const [c, p, o, pay, costs, exp, stock, movements] = await Promise.all([
+      const [c, p, o, pay, costs, exp] = await Promise.all([
         supabase.from('clients').select('*').order('name'),
 
         supabase.from('products')
@@ -182,18 +221,9 @@ function App() {
           .select('*')
           .order('expense_date', { ascending: false }),
 
-        supabase.from('inventory_items')
-          .select('*')
-          .eq('active', true)
-          .order('name'),
-
-        supabase.from('inventory_movements')
-          .select('*')
-          .order('movement_date', { ascending: false })
-          .order('created_at', { ascending: false })
       ])
 
-      const err = c.error || p.error || o.error || pay.error || costs.error || exp.error || stock.error || movements.error
+      const err = c.error || p.error || o.error || pay.error || costs.error || exp.error
       if (err) throw err
 
       const loadedPayments = pay.data || []
@@ -228,8 +258,6 @@ function App() {
       setPayments(loadedPayments)
       setOrderCosts(costs.data || [])
       setExpenses(exp.data || [])
-      setInventoryItems(stock.data || [])
-      setStockMovements(movements.data || [])
     } catch (err) {
       setError('Erro ao carregar os dados: ' + (err.message || 'Erro desconhecido'))
     } finally {
@@ -300,8 +328,10 @@ function App() {
       items: (order.work_order_items || []).map(item => ({
         product_id: item.product_id || '',
         description: item.description || '',
-        quantity: item.quantity ?? 1,
-        unit_price: item.unit_price ?? 0
+        quantity: item.quantity ?? 0,
+        unit_price: item.unit_price ?? 0,
+        size_breakdown: item.size_breakdown || {},
+        legacyQuantity: getSizeTotal(item.size_breakdown) === 0 && Number(item.quantity) > 0
       })),
 
       production: {
@@ -373,7 +403,7 @@ function App() {
 
   async function deleteOrder(order) {
     const confirmed = window.confirm(
-      `Tem certeza que deseja excluir a OS #${String(order.number).padStart(5, '0')}? Esta ação também excluirá o histórico de recebimentos e não poderá ser desfeita.`
+      `Excluir definitivamente a OS #${String(order.number).padStart(5, '0')}? OS com recebimentos ou custos vinculados não podem ser excluídas; nesses casos, use o status Cancelada.`
     )
 
     if (!confirmed) return
@@ -382,13 +412,6 @@ function App() {
     setError('')
 
     try {
-      const { error: itemsError } = await supabase
-        .from('work_order_items')
-        .delete()
-        .eq('work_order_id', order.id)
-
-      if (itemsError) throw itemsError
-
       const { error: orderError } = await supabase
         .from('work_orders')
         .delete()
@@ -468,19 +491,24 @@ function App() {
     try {
       const items = orderForm.items
         .filter(item => item.description.trim())
-        .map(item => ({
-          ...item,
-          quantity: Number(item.quantity),
-          unit_price: Number(item.unit_price),
-          product_id: item.product_id || null
-        }))
+        .map(item => {
+          const gridQuantity = getSizeTotal(item.size_breakdown)
+          const legacyQuantity = item.legacyQuantity ? Number(item.quantity) || 0 : 0
+          return {
+            product_id: item.product_id || null,
+            description: item.description.trim(),
+            quantity: gridQuantity || legacyQuantity,
+            unit_price: Number(item.unit_price),
+            size_breakdown: item.size_breakdown || {}
+          }
+        })
 
       if (!items.length) {
         throw new Error('Adicione pelo menos um item à OS.')
       }
 
       if (items.some(item => item.quantity <= 0 || item.unit_price < 0)) {
-        throw new Error('Confira as quantidades e os valores dos itens.')
+        throw new Error('Preencha pelo menos um tamanho na grade de cada item novo. A quantidade é calculada automaticamente pela soma dos tamanhos. Confira também o valor unitário.')
       }
 
       const total = items.reduce(
@@ -517,52 +545,21 @@ function App() {
         production_details: orderForm.production
       }
 
-      let orderId
       const currentMockupPath = editing?.mockup_url || null
-
-      if (editing) {
-        const { error: updateError } = await supabase
-          .from('work_orders')
-          .update(payload)
-          .eq('id', editing.id)
-
-        if (updateError) throw updateError
-
-        orderId = editing.id
-
-        const { error: deleteItemsError } = await supabase
-          .from('work_order_items')
-          .delete()
-          .eq('work_order_id', orderId)
-
-        if (deleteItemsError) {
-          throw new Error(
-            'OS atualizada, mas não foi possível substituir os itens: ' +
-            deleteItemsError.message
-          )
+      const { data: savedOrderId, error: atomicSaveError } = await supabase.rpc(
+        'kalango_save_work_order_atomic',
+        {
+          p_work_order_id: editing?.id || null,
+          p_payload: payload,
+          p_items: items
         }
-      } else {
-        const { data, error: insertError } = await supabase
-          .from('work_orders')
-          .insert(payload)
-          .select()
-          .single()
-
-        if (insertError) throw insertError
-        orderId = data.id
-      }
-
-      const { error: itemError } = await supabase
-        .from('work_order_items')
-        .insert(items.map(item => ({
-          ...item,
-          work_order_id: orderId
-        })))
-
-      if (itemError) {
-        throw new Error(
-          'OS salva, mas houve erro ao salvar os itens: ' + itemError.message
-        )
+      )
+      if (atomicSaveError) throw atomicSaveError
+      const orderId = savedOrderId
+      if (!editing?.public_tracking_token) {
+        const token = crypto.randomUUID()
+        const { error: tokenError } = await supabase.from('work_orders').update({ public_tracking_token: token }).eq('id', orderId)
+        if (tokenError) throw new Error('OS salva, mas não foi possível habilitar o link de acompanhamento: ' + tokenError.message)
       }
 
       if (orderForm.mockupFile) {
@@ -687,69 +684,6 @@ function App() {
     finally { setBusy(false) }
   }
 
-  async function saveStockItem(e) {
-    e.preventDefault()
-    if (!stockForm.name.trim()) return setError('Informe o nome do item de estoque.')
-    const minimum = Number(stockForm.minimum_stock || 0)
-    if (minimum < 0) return setError('O estoque mínimo não pode ser negativo.')
-    setBusy(true); setError('')
-    try {
-      const { error } = await supabase.from('inventory_items').insert({
-        name: stockForm.name.trim(), category: stockForm.category,
-        unit: stockForm.unit.trim() || 'un', minimum_stock: minimum,
-        notes: stockForm.notes || null, active: true
-      })
-      if (error) throw error
-      setStockForm({ name: '', category: 'Camisetas prontas', unit: 'un', minimum_stock: '0', notes: '' })
-      setNotice('Item cadastrado no estoque. Registre uma entrada para informar o saldo inicial.')
-      await loadAll()
-    } catch (err) { setError('Não foi possível cadastrar o item: ' + (err.message || 'Erro desconhecido')) }
-    finally { setBusy(false) }
-  }
-
-  const getStockBalance = itemId => stockMovements.reduce((balance, movement) => {
-    if (movement.item_id !== itemId) return balance
-    const quantity = Number(movement.quantity || 0)
-    return balance + (movement.movement_type === 'Entrada' ? quantity : -quantity)
-  }, 0)
-
-  async function saveStockMovement(e) {
-    e.preventDefault()
-    const quantity = Number(movementForm.quantity)
-    const unitCost = Number(movementForm.unit_cost || 0)
-    if (!movementForm.item_id) return setError('Selecione um item do estoque.')
-    if (!(quantity > 0) || unitCost < 0) return setError('Informe uma quantidade válida e custo unitário não negativo.')
-    const balance = getStockBalance(movementForm.item_id)
-    if (movementForm.movement_type === 'Saída' && quantity > balance) return setError(`Saldo insuficiente. Disponível: ${balance.toLocaleString('pt-BR')}.`)
-    setBusy(true); setError('')
-    try {
-      const { error } = await supabase.from('inventory_movements').insert({
-        item_id: movementForm.item_id, movement_type: movementForm.movement_type,
-        quantity, unit_cost: unitCost, movement_date: movementForm.movement_date || localDate(),
-        description: movementForm.description.trim() || (movementForm.movement_type === 'Entrada' ? 'Entrada de estoque' : 'Saída de estoque'),
-        notes: movementForm.notes || null
-      })
-      if (error) throw error
-      setMovementForm({ item_id: '', movement_type: 'Entrada', quantity: '', unit_cost: '0', movement_date: localDate(), description: '', notes: '' })
-      setNotice('Movimentação de estoque registrada.')
-      await loadAll()
-    } catch (err) { setError('Não foi possível registrar a movimentação: ' + (err.message || 'Erro desconhecido')) }
-    finally { setBusy(false) }
-  }
-
-  async function deleteStockItem(item) {
-    if (stockMovements.some(m => m.item_id === item.id)) return setError('Este item possui movimentações. Para preservar o histórico, não é possível excluí-lo.')
-    if (!window.confirm(`Excluir o item “${item.name}”?`)) return
-    setBusy(true); setError('')
-    try {
-      const { error } = await supabase.from('inventory_items').delete().eq('id', item.id)
-      if (error) throw error
-      setNotice('Item removido do estoque.')
-      await loadAll()
-    } catch (err) { setError('Não foi possível excluir o item: ' + (err.message || 'Erro desconhecido')) }
-    finally { setBusy(false) }
-  }
-
   async function changeStatus(id, status) {
     const { error } = await supabase
       .from('work_orders')
@@ -765,9 +699,31 @@ function App() {
     setError('')
 
     try {
+      const previousDetails = order.production_details || {}
+      const previousStage = getProductionStage(order)
+      const changedAt = new Date().toISOString()
+      const stageHistory = Array.isArray(previousDetails.stageHistory)
+        ? [...previousDetails.stageHistory]
+        : []
+      if (previousStage !== productionStage) {
+        stageHistory.push({
+          stage: previousStage,
+          startedAt: previousDetails.stageStartedAt || null,
+          endedAt: changedAt,
+          durationMinutes: elapsedMinutes(previousDetails.stageStartedAt, changedAt)
+        })
+      }
       const productionDetails = {
-        ...(order.production_details || {}),
-        productionStage
+        ...previousDetails,
+        productionStage,
+        stageHistory,
+        stageStartedAt: previousStage === productionStage
+          ? (previousDetails.stageStartedAt || changedAt)
+          : changedAt,
+        productionStartedAt: previousDetails.productionStartedAt || changedAt,
+        productionCompletedAt: productionStage === 'Pronto para entrega'
+          ? changedAt
+          : (previousDetails.productionCompletedAt || null)
       }
 
       const nextOrderStatus = productionStage === 'Aguardando preparação'
@@ -795,6 +751,53 @@ function App() {
     }
   }
 
+  async function saveProductionResponsible(order, stage, responsible) {
+    const previousDetails = order.production_details || {}
+    const stageAssignments = { ...(previousDetails.stageAssignments || {}), [stage]: responsible.trim() }
+    const nextDetails = { ...previousDetails, stageAssignments }
+    const { error } = await supabase
+      .from('work_orders')
+      .update({ production_details: nextDetails })
+      .eq('id', order.id)
+    if (error) {
+      setError('Não foi possível salvar o responsável: ' + error.message)
+      return
+    }
+    setOrders(current => current.map(item => item.id === order.id
+      ? { ...item, production_details: nextDetails }
+      : item))
+    setNotice(`Responsável da OS #${String(order.number).padStart(5, '0')} atualizado.`)
+  }
+
+  function trackingUrl(order) {
+    if (!order?.public_tracking_token) return ''
+    return `${window.location.origin}${window.location.pathname}?acompanhar=${order.public_tracking_token}`
+  }
+
+  async function copyTrackingLink(order) {
+    const link = trackingUrl(order)
+    if (!link) return setError('Link ainda não disponível. Execute a migração SQL da atualização.')
+    try { await navigator.clipboard.writeText(link); setNotice('Link de acompanhamento copiado.') }
+    catch { setError('Não foi possível copiar automaticamente. Abra o link pelo botão de compartilhamento.') }
+  }
+
+  function whatsappMessage(order, kind = 'status') {
+    const rawPhone = String(order.clients?.whatsapp || order.clients?.phone || '').replace(/\D/g, '')
+    const phone = rawPhone && rawPhone.length <= 11 ? `55${rawPhone}` : rawPhone
+    if (!phone) return setError('Este cliente não possui telefone/WhatsApp cadastrado.')
+    const number = `#${String(order.number).padStart(5, '0')}`
+    const link = trackingUrl(order)
+    const text = kind === 'quote'
+      ? `Olá, ${order.clients?.name || ''}! Segue o orçamento ${number} da DCS CONFECÇÃO, no valor de ${money(order.total)}. Prazo previsto: ${dateBR(order.due_date)}. Qualquer dúvida, estamos à disposição.`
+      : `Olá, ${order.clients?.name || ''}! Atualização do seu pedido ${number}: ${order.status}. Etapa atual: ${getProductionStage(order)}. Previsão: ${dateBR(order.due_date)}.${link ? ` Acompanhe por aqui: ${link}` : ''}`
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
+  }
+
+  function openQuotePrint(order) {
+    setSelectedQuote(order)
+    setTimeout(() => window.print(), 180)
+  }
+
   function printOrder(order) {
     setSelectedOrder(order)
     setTimeout(() => window.print(), 150)
@@ -817,6 +820,8 @@ function App() {
     (order.clients?.name || '').toLowerCase().includes(search.toLowerCase())
   )
 
+  const today = localDate()
+
   const productionOrders = orders
     .filter(order => ['Aprovada', 'Em produção', 'Concluída'].includes(order.status))
     .sort((a, b) => {
@@ -829,6 +834,16 @@ function App() {
     stage,
     count: productionOrders.filter(order => getProductionStage(order) === stage).length
   }))
+  const productionLateOrders = productionOrders.filter(order =>
+    order.due_date && order.due_date < today && !['Concluída', 'Entregue', 'Cancelada'].includes(order.status)
+  )
+  const filteredProductionOrders = productionOrders.filter(order => {
+    const stageMatch = productionFilterStage === 'Todas' || getProductionStage(order) === productionFilterStage
+    const clientMatch = productionFilterClient === 'Todos' || order.client_id === productionFilterClient
+    const late = order.due_date && order.due_date < today && !['Concluída', 'Entregue', 'Cancelada'].includes(order.status)
+    const dueMatch = productionFilterDue === 'Todos' || (productionFilterDue === 'Atrasadas' ? late : productionFilterDue === 'No prazo' ? !late : order.due_date === today)
+    return stageMatch && clientMatch && dueMatch
+  })
 
   const totalOpen = orders.filter(order =>
     !['Concluída', 'Cancelada', 'Entregue'].includes(order.status)
@@ -858,7 +873,6 @@ function App() {
 
   const financeBalance = Math.max(0, financeTotal - financeReceived)
 
-  const today = localDate()
 
   const receivables = financialOrders
     .map(order => ({
@@ -915,24 +929,24 @@ function App() {
   const periodOrderCosts = orderCosts.filter(item => item.cost_date >= financeFrom && item.cost_date <= financeTo).reduce((sum, item) => sum + Number(item.total_cost || (Number(item.quantity || 1) * Number(item.unit_cost || 0))), 0)
   const periodOperatingResult = periodReceived - periodOrderCosts - periodExpenseTotal
 
-  const stockSummary = inventoryItems.map(item => {
-    const balance = getStockBalance(item.id)
-    return { ...item, balance, low: balance <= Number(item.minimum_stock || 0) }
-  })
-  const lowStockItems = stockSummary.filter(item => item.low)
-  const filteredStockSummary = stockSummary.filter(item => {
-    const term = stockSearch.trim().toLocaleLowerCase('pt-BR')
-    return !term || [item.name, item.category, item.unit].some(value => String(value || '').toLocaleLowerCase('pt-BR').includes(term))
-  })
-  const filteredStockMovements = stockMovements.filter(movement => {
-    if (stockMovementFilter === 'Todos') return true
-    return movement.item_id === stockMovementFilter
-  })
   const periodOrders = financialOrders.filter(order => {
     const date = (order.created_at || '').slice(0, 10)
     return date >= financeFrom && date <= financeTo
   })
   const periodOrderRevenue = periodOrders.reduce((sum, order) => sum + Number(order.total || 0), 0)
+  const periodPieces = periodOrders.reduce((sum, order) => sum + (order.work_order_items || []).reduce((subtotal, item) => subtotal + getItemQuantity(item), 0), 0)
+  const reportStatusCounts = ['Orçamento', 'Aguardando aprovação', 'Aprovada', 'Em produção', 'Concluída', 'Entregue', 'Cancelada'].map(status => ({
+    status,
+    count: periodOrders.filter(order => order.status === status).length
+  })).filter(item => item.count > 0)
+  const reportTopClients = Object.values(periodOrders.reduce((acc, order) => {
+    const name = order.clients?.name || 'Cliente não informado'
+    if (!acc[name]) acc[name] = { name, orders: 0, revenue: 0, pieces: 0 }
+    acc[name].orders += 1
+    acc[name].revenue += Number(order.total || 0)
+    acc[name].pieces += (order.work_order_items || []).reduce((subtotal, item) => subtotal + getItemQuantity(item), 0)
+    return acc
+  }, {})).sort((a, b) => b.revenue - a.revenue).slice(0, 10)
   const reportMonths = Array.from({ length: 6 }, (_, index) => {
     const d = new Date()
     d.setDate(1)
@@ -947,14 +961,56 @@ function App() {
     return { key, label, revenue, received, costs, general, result: received - costs - general }
   })
 
+  if (trackingToken) {
+    const data = publicTracking.data
+    const stages = ['Aguardando preparação', 'Preparação', 'Estamparia', 'Acabamento', 'Conferência', 'Pronto para entrega']
+    const currentStage = data?.production_stage || (data?.status === 'Concluída' || data?.status === 'Entregue' ? 'Pronto para entrega' : data?.status === 'Em produção' ? 'Preparação' : 'Aguardando preparação')
+    const stageIndex = Math.max(0, stages.indexOf(currentStage))
+    const isCancelled = data?.status === 'Cancelada'
+    const progress = data?.status === 'Entregue' ? 100 : isCancelled ? 0 : Math.round(((stageIndex + 1) / stages.length) * 100)
+    return (
+      <div className="client-portal-wrap">
+        <main className="client-portal">
+          <header className="client-portal-header">
+            <div className="client-portal-brand"><div className="brand-mark">D</div><div><b>DCS CONFECÇÃO</b><small>PORTAL DO CLIENTE</small></div></div>
+            <span className="client-portal-secure">Acompanhamento online</span>
+          </header>
+          <section className="client-portal-intro">
+            <p className="eyebrow">ÁREA DE ACOMPANHAMENTO</p>
+            <h1>Seu pedido, sempre atualizado.</h1>
+            <p>Consulte o andamento da produção e a previsão de entrega do seu pedido.</p>
+          </section>
+          {publicTracking.loading && !data ? <section className="client-portal-panel client-portal-loading"><div className="portal-spinner"/><b>Buscando seu pedido...</b><span>Isso pode levar alguns segundos.</span></section> : publicTracking.error ? <section className="client-portal-panel client-portal-error"><div className="portal-error-icon">!</div><h2>Não foi possível localizar o pedido</h2><p>{publicTracking.error}</p></section> : data ? <>
+            <section className="client-portal-panel client-order-summary">
+              <div className="client-order-top"><div><span className="portal-label">NÚMERO DO PEDIDO</span><strong className="client-order-number">#{String(data.number).padStart(5, '0')}</strong></div><span className={`client-order-badge ${isCancelled ? 'cancelled' : data.status === 'Entregue' ? 'delivered' : ''}`}>{data.status || 'Em acompanhamento'}</span></div>
+              <div className="client-order-info"><div><span className="portal-label">ETAPA ATUAL</span><b>{currentStage}</b></div><div><span className="portal-label">PREVISÃO DE ENTREGA</span><b>{dateBR(data.due_date)}</b></div></div>
+              {!isCancelled && <div className="portal-progress-area"><div className="portal-progress-caption"><span>Progresso da produção</span><b>{progress}%</b></div><div className="public-track-progress"><span style={{width: `${progress}%`}} /></div></div>}
+            </section>
+            {!isCancelled && <section className="client-portal-panel">
+              <div className="portal-section-heading"><div><span className="portal-label">ACOMPANHAMENTO</span><h2>Etapas do pedido</h2></div><span className="portal-live-dot">Atualizado</span></div>
+              <ol className="portal-timeline">{stages.map((stage, index) => {
+                const completed = data.status === 'Entregue' || index < stageIndex || (data.status === 'Concluída' && index === stages.length - 1)
+                const active = data.status !== 'Entregue' && index === stageIndex
+                return <li key={stage} className={`${completed ? 'completed' : ''} ${active ? 'active' : ''}`}><span className="portal-timeline-marker">{completed ? '✓' : index + 1}</span><div><b>{stage}</b>{active && <small>Etapa atual do seu pedido</small>}</div></li>
+              })}</ol>
+            </section>}
+            {isCancelled && <section className="client-portal-panel portal-cancelled-note"><b>Pedido cancelado</b><p>Entre em contato com a DCS CONFECÇÃO caso precise de mais informações.</p></section>}
+            <section className="client-portal-footer"><p>As informações deste portal são fornecidas pela equipe da DCS CONFECÇÃO.</p><button className="portal-refresh-button" onClick={() => refreshPublicTracking()} disabled={publicTracking.loading}>{publicTracking.loading ? 'Atualizando...' : '↻ Atualizar acompanhamento'}</button>{publicTrackingUpdatedAt && <small>Última consulta: {publicTrackingUpdatedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>}</section>
+          </> : null}
+          <footer className="client-portal-bottom">DCS CONFECÇÃO · Atendimento e produção</footer>
+        </main>
+      </div>
+    )
+  }
+
   if (!supabase) return <SetupScreen />
 
   if (!session) {
     return (
       <div className="login-wrap">
         <form className="login-card" onSubmit={login}>
-          <div className="brand-mark">K</div>
-          <p className="eyebrow">KALANGO CONFECÇÃO</p>
+          <div className="brand-mark">D</div>
+          <p className="eyebrow">DCS CONFECÇÃO</p>
           <h1>Gestão</h1>
           <p className="muted">Entre para acessar suas ordens de serviço.</p>
 
@@ -991,11 +1047,11 @@ function App() {
   const nav = [
     ['dashboard', 'Painel', LayoutDashboard],
     ['orders', 'Ordens de serviço', ClipboardList],
+    ['quotes', 'Orçamentos', FileText],
     ['production', 'Produção', CheckCircle2],
     ['finance', 'Financeiro', CircleDollarSign],
     ['costs', 'Custos e lucro', TrendingUp],
     ['expenses', 'Despesas', Receipt],
-    ['stock', 'Estoque', Boxes],
     ['reports', 'Relatórios', BarChart3],
     ['clients', 'Clientes', Users],
     ['products', 'Produtos', Package]
@@ -1005,9 +1061,9 @@ function App() {
     <div className="app-shell" data-page={page}>
       <aside className={`sidebar ${mobileNav ? 'show' : ''}`}>
         <div className="brand">
-          <div className="brand-mark">K</div>
+          <div className="brand-mark">D</div>
           <div>
-            <b>KALANGO CONFECÇÃO</b>
+            <b>DCS CONFECÇÃO</b>
             <small>GESTÃO</small>
           </div>
           <button
@@ -1067,7 +1123,7 @@ function App() {
           </button>
 
           <div>
-            <span className="eyebrow">KALANGO CONFECÇÃO</span>
+            <span className="eyebrow">DCS CONFECÇÃO</span>
             <h2>{nav.find(item => item[0] === page)?.[1]}</h2>
           </div>
 
@@ -1136,6 +1192,8 @@ function App() {
                 onEdit={editOrder}
                 onDelete={deleteOrder}
                 onPayments={openPayments}
+                onMessage={whatsappMessage}
+                onTracking={copyTrackingLink}
               />
             </section>
           </>
@@ -1168,7 +1226,18 @@ function App() {
               onEdit={editOrder}
               onDelete={deleteOrder}
               onPayments={openPayments}
+                onMessage={whatsappMessage}
+                onTracking={copyTrackingLink}
             />
+          </section>
+        )}
+
+        {page === 'quotes' && (
+          <section className="panel">
+            <div className="panel-head"><div><h3>Orçamentos</h3><p className="muted">Orçamentos são OS com status Orçamento ou Aguardando aprovação. Aprove um orçamento alterando o status para Aprovada.</p></div><button className="primary" onClick={openOrder}><Plus size={16}/> Novo orçamento</button></div>
+            <div className="table-wrap"><table><thead><tr><th>Número</th><th>Cliente</th><th>Data</th><th>Entrega prevista</th><th>Valor</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
+              {orders.filter(o => ['Orçamento','Aguardando aprovação'].includes(o.status)).map(order => <tr key={order.id}><td><b>#{String(order.number).padStart(5,'0')}</b></td><td>{order.clients?.name || '—'}</td><td>{dateBR(order.created_at?.slice(0,10))}</td><td>{dateBR(order.due_date)}</td><td>{money(order.total)}</td><td>{order.status}</td><td><div className="order-actions"><button className="secondary small" onClick={()=>openQuotePrint(order)}><Printer size={14}/> PDF / imprimir</button><button className="secondary small" onClick={()=>whatsappMessage(order,'quote')}><MessageCircle size={14}/> Enviar</button><button className="secondary small" onClick={()=>changeStatus(order.id,'Aprovada')}><CheckCircle2 size={13}/> Aprovar</button><button className="secondary small" onClick={()=>editOrder(order)}>Editar</button></div></td></tr>)}
+            </tbody></table>{!orders.some(o=>['Orçamento','Aguardando aprovação'].includes(o.status)) && <Empty text="Nenhum orçamento pendente."/>}</div>
           </section>
         )}
 
@@ -1183,6 +1252,12 @@ function App() {
               <button className="secondary" onClick={loadAll} disabled={busy}>
                 <RefreshCw size={16} /> Atualizar produção
               </button>
+            </section>
+
+            <section className="stats production-summary-stats">
+              <Stat icon={ClipboardList} label="OS na fila" value={productionOrders.length} />
+              <Stat icon={AlertCircle} label="OS atrasadas" value={productionLateOrders.length} />
+              <Stat icon={Clock3} label="Em produção" value={productionOrders.filter(order => order.status === 'Em produção').length} />
             </section>
 
             <section className="production-stage-cards">
@@ -1203,6 +1278,32 @@ function App() {
                 <span className="finance-count">{productionOrders.length} OS</span>
               </div>
 
+              <div className="form-grid production-filters">
+                <label>Etapa
+                  <select value={productionFilterStage} onChange={e => setProductionFilterStage(e.target.value)}>
+                    <option>Todas</option>
+                    {productionStages.map(stage => <option key={stage}>{stage}</option>)}
+                  </select>
+                </label>
+                <label>Cliente
+                  <select value={productionFilterClient} onChange={e => setProductionFilterClient(e.target.value)}>
+                    <option value="Todos">Todos os clientes</option>
+                    {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
+                  </select>
+                </label>
+                <label>Prazo
+                  <select value={productionFilterDue} onChange={e => setProductionFilterDue(e.target.value)}>
+                    <option value="Todos">Todos os prazos</option>
+                    <option value="Atrasadas">Atrasadas</option>
+                    <option value="Hoje">Entrega hoje</option>
+                    <option value="No prazo">No prazo</option>
+                  </select>
+                </label>
+                <label>Busca
+                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Número da OS ou cliente" />
+                </label>
+              </div>
+
               <div className="table-wrap">
                 <table className="production-table">
                   <thead>
@@ -1212,15 +1313,16 @@ function App() {
                       <th>Entrega prevista</th>
                       <th>Detalhes</th>
                       <th>Etapa de produção</th>
+                      <th>Responsável</th>
                       <th>Status da OS</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {productionOrders.map(order => {
-                      const overdue = order.due_date && order.due_date < today && order.status !== 'Entregue'
+                    {filteredProductionOrders.filter(order => !search || String(order.number).includes(search) || (order.clients?.name || '').toLowerCase().includes(search.toLowerCase())).map(order => {
+                      const overdue = order.due_date && order.due_date < today && !['Concluída', 'Entregue', 'Cancelada'].includes(order.status)
                       const details = order.production_details || {}
                       const itemSummary = (order.work_order_items || [])
-                        .map(item => `${item.quantity}x ${item.description}`)
+                        .map(item => `${getItemQuantity(item)}x ${item.description}`)
                         .join(' · ')
 
                       return (
@@ -1237,6 +1339,8 @@ function App() {
                             <b>{details.garmentModel || 'Peça não informada'}</b>
                             <small>{itemSummary || details.sizes || 'Sem descrição dos itens'}</small>
                             <small>{details.printTechnique || 'Técnica não informada'}</small>
+                            <small>{details.stageStartedAt ? `Nesta etapa há ${formatDuration(elapsedMinutes(details.stageStartedAt))}` : 'Etapa sem início registrado'}</small>
+                            {details.stageHistory?.length > 0 && <small>Última mudança: {new Date(details.stageHistory[details.stageHistory.length - 1].endedAt).toLocaleString('pt-BR')}</small>}
                           </td>
                           <td>
                             <select
@@ -1248,6 +1352,7 @@ function App() {
                               {productionStages.map(stage => <option key={stage}>{stage}</option>)}
                             </select>
                           </td>
+                          <td><input className="production-responsible-input" aria-label={`Responsável pela etapa da OS ${order.number}`} defaultValue={details.stageAssignments?.[getProductionStage(order)] || ''} placeholder="Nome do responsável" onBlur={e => saveProductionResponsible(order, getProductionStage(order), e.target.value)} /></td>
                           <td><span className="production-order-status">{order.status}</span></td>
                         </tr>
                       )
@@ -1258,6 +1363,9 @@ function App() {
 
               {!productionOrders.length && (
                 <Empty text="Nenhuma OS aprovada ou em produção no momento." />
+              )}
+              {productionOrders.length > 0 && !filteredProductionOrders.filter(order => !search || String(order.number).includes(search) || (order.clients?.name || '').toLowerCase().includes(search.toLowerCase())).length && (
+                <Empty text="Nenhuma OS corresponde aos filtros selecionados." />
               )}
             </section>
           </>
@@ -1528,55 +1636,21 @@ function App() {
           </>
         )}
 
-        {page === 'stock' && (
-          <>
-            <section className="welcome">
-              <div><p className="eyebrow">MATERIAIS E INSUMOS</p><h1>Controle de estoque</h1><p>Cadastre camisetas prontas, tintas, telas, insumos e materiais. O saldo é calculado pelo histórico de entradas e saídas.</p></div>
-              <span className="finance-count">{lowStockItems.length} abaixo do mínimo</span>
-            </section>
-            <section className="stats finance-stats">
-              <Stat icon={Boxes} label="Itens cadastrados" value={inventoryItems.length} />
-              <Stat icon={AlertCircle} label="Estoque baixo / zerado" value={lowStockItems.length} />
-              <Stat icon={ArrowDownCircle} label="Movimentações" value={stockMovements.length} />
-            </section>
-            <section className="panel">
-              <div className="panel-head"><div><h3>Cadastrar item</h3><p className="muted">Ex.: camiseta preta M, tinta branca, emulsão, papel sublimático.</p></div></div>
-              <form className="form-grid" onSubmit={saveStockItem}>
-                <label>Nome do item *<input required value={stockForm.name} onChange={e=>setStockForm({...stockForm,name:e.target.value})} placeholder="Nome do material" /></label>
-                <label>Categoria<select value={stockForm.category} onChange={e=>setStockForm({...stockForm,category:e.target.value})}>{['Camisetas prontas','Tintas e insumos de serigrafia','DTF terceirizado','Sublimação','Embalagens','Materiais diversos','Outros'].map(x=><option key={x}>{x}</option>)}</select></label>
-                <label>Unidade<input required value={stockForm.unit} onChange={e=>setStockForm({...stockForm,unit:e.target.value})} placeholder="un, kg, L, m..." /></label>
-                <label>Estoque mínimo<input type="number" min="0" step="0.001" value={stockForm.minimum_stock} onChange={e=>setStockForm({...stockForm,minimum_stock:e.target.value})}/></label>
-                <label className="wide">Observações<input value={stockForm.notes} onChange={e=>setStockForm({...stockForm,notes:e.target.value})}/></label>
-                <div className="form-actions wide"><button className="primary" disabled={busy}><Plus size={16}/> Cadastrar item</button></div>
-              </form>
-            </section>
-            <section className="panel">
-              <div className="panel-head"><div><h3>Registrar movimentação</h3><p className="muted">Use uma entrada para cadastrar o saldo inicial. Saídas não podem ultrapassar o saldo disponível.</p></div></div>
-              <form className="form-grid" onSubmit={saveStockMovement}>
-                <label>Item *<select required value={movementForm.item_id} onChange={e=>setMovementForm({...movementForm,item_id:e.target.value})}><option value="">Selecione</option>{inventoryItems.map(item=><option key={item.id} value={item.id}>{item.name} · saldo {getStockBalance(item.id).toLocaleString('pt-BR')} {item.unit}</option>)}</select></label>
-                <label>Tipo<select value={movementForm.movement_type} onChange={e=>setMovementForm({...movementForm,movement_type:e.target.value})}><option>Entrada</option><option>Saída</option></select></label>
-                <label>Quantidade *<input required type="number" min="0.001" step="0.001" value={movementForm.quantity} onChange={e=>setMovementForm({...movementForm,quantity:e.target.value})}/></label>
-                <label>Custo unitário (R$)<input type="number" min="0" step="0.01" value={movementForm.unit_cost} onChange={e=>setMovementForm({...movementForm,unit_cost:e.target.value})}/></label>
-                <label>Data<input type="date" value={movementForm.movement_date} onChange={e=>setMovementForm({...movementForm,movement_date:e.target.value})}/></label>
-                <label>Descrição<input value={movementForm.description} onChange={e=>setMovementForm({...movementForm,description:e.target.value})} placeholder="Compra, consumo, ajuste..."/></label>
-                <label className="wide">Observações<input value={movementForm.notes} onChange={e=>setMovementForm({...movementForm,notes:e.target.value})}/></label>
-                <div className="form-actions wide"><button className="primary" disabled={busy || !inventoryItems.length}><Plus size={16}/> Registrar {movementForm.movement_type.toLowerCase()}</button></div>
-              </form>
-            </section>
-            <section className="panel">
-              <div className="panel-head"><div><h3>Saldo atual</h3><p className="muted">Itens em alerta aparecem destacados quando o saldo é igual ou inferior ao estoque mínimo.</p></div></div>
-              <div className="stock-filters"><input aria-label="Pesquisar estoque" value={stockSearch} onChange={e=>setStockSearch(e.target.value)} placeholder="Pesquisar por item, categoria ou unidade..." /></div>
-              <div className="table-wrap"><table className="finance-table"><thead><tr><th>Item</th><th>Categoria</th><th>Saldo</th><th>Mínimo</th><th>Status</th><th></th></tr></thead><tbody>{filteredStockSummary.map(item=><tr key={item.id}><td><b>{item.name}</b></td><td>{item.category}</td><td><strong>{item.balance.toLocaleString('pt-BR')} {item.unit}</strong></td><td>{Number(item.minimum_stock||0).toLocaleString('pt-BR')} {item.unit}</td><td><span className={`finance-status ${item.low?'overdue':''}`}>{item.low?'Repor estoque':'Normal'}</span></td><td><button className="remove-btn" onClick={()=>deleteStockItem(item)}>Excluir</button></td></tr>)}</tbody></table>{!stockSummary.length&&<Empty text="Nenhum item cadastrado no estoque."/>}{stockSummary.length>0&&!filteredStockSummary.length&&<Empty text="Nenhum item corresponde à pesquisa."/>}</div>
-            </section>
-            <section className="panel"><div className="panel-head"><div><h3>Histórico de movimentações</h3><p className="muted">Registro cronológico de entradas e saídas.</p></div><select aria-label="Filtrar movimentações por item" value={stockMovementFilter} onChange={e=>setStockMovementFilter(e.target.value)}><option value="Todos">Todos os itens</option>{inventoryItems.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></div><div className="table-wrap"><table className="finance-table"><thead><tr><th>Data</th><th>Item</th><th>Tipo</th><th>Quantidade</th><th>Custo unitário</th><th>Descrição</th></tr></thead><tbody>{filteredStockMovements.map(movement=>{const item=inventoryItems.find(x=>x.id===movement.item_id);return <tr key={movement.id}><td>{dateBR(movement.movement_date)}</td><td>{item?.name||'Item indisponível'}</td><td>{movement.movement_type}</td><td>{Number(movement.quantity).toLocaleString('pt-BR')} {item?.unit||''}</td><td>{money(movement.unit_cost)}</td><td>{movement.description}</td></tr>})}</tbody></table>{!stockMovements.length&&<Empty text="Nenhuma movimentação registrada."/>}{stockMovements.length>0&&!filteredStockMovements.length&&<Empty text="Nenhuma movimentação para este item."/>}</div></section>
-          </>
-        )}
-
         {page === 'reports' && (
           <>
             <section className="welcome"><div><p className="eyebrow">INDICADORES GERENCIAIS</p><h1>Relatórios</h1><p>Visão consolidada de vendas, recebimentos, custos diretos e despesas.</p></div><button className="primary report-print-button" type="button" onClick={()=>window.print()}><Printer size={16}/> Imprimir relatório</button></section>
             <section className="panel"><div className="panel-head"><div><h3>Período analisado</h3><p className="muted">As vendas usam a data de criação da OS; recebimentos, a data do pagamento; custos e despesas, suas respectivas datas.</p></div></div><div className="form-grid finance-filters"><label>Data inicial<input type="date" value={financeFrom} onChange={e=>setFinanceFrom(e.target.value)}/></label><label>Data final<input type="date" value={financeTo} onChange={e=>setFinanceTo(e.target.value)}/></label></div></section>
-            <section className="stats finance-stats"><Stat icon={ClipboardList} label="OS criadas no período" value={periodOrders.length}/><Stat icon={CircleDollarSign} label="Valor vendido no período" value={money(periodOrderRevenue)}/><Stat icon={Wallet} label="Recebido no período" value={money(periodReceived)}/><Stat icon={Receipt} label="Custos diretos + despesas" value={money(periodOrderCosts+periodExpenseTotal)}/><Stat icon={TrendingUp} label="Resultado de caixa estimado" value={money(periodOperatingResult)}/></section>
+            <section className="stats finance-stats"><Stat icon={ClipboardList} label="OS criadas no período" value={periodOrders.length}/><Stat icon={Package} label="Peças nas OS do período" value={periodPieces.toLocaleString('pt-BR')}/><Stat icon={CircleDollarSign} label="Valor vendido no período" value={money(periodOrderRevenue)}/><Stat icon={Wallet} label="Recebido no período" value={money(periodReceived)}/><Stat icon={Receipt} label="Custos diretos + despesas" value={money(periodOrderCosts+periodExpenseTotal)}/><Stat icon={TrendingUp} label="Resultado de caixa estimado" value={money(periodOperatingResult)}/></section>
+            <section className="panel report-breakdown-grid">
+              <div>
+                <div className="panel-head"><div><h3>OS por situação</h3><p className="muted">Distribuição das ordens criadas no período selecionado.</p></div></div>
+                {reportStatusCounts.length ? reportStatusCounts.map(item => <div className="report-status-row" key={item.status}><span>{item.status}</span><strong>{item.count}</strong></div>) : <Empty text="Nenhuma OS no período." />}
+              </div>
+              <div>
+                <div className="panel-head"><div><h3>Clientes em destaque</h3><p className="muted">Classificação por valor contratado no período.</p></div></div>
+                {reportTopClients.length ? <div className="table-wrap"><table className="finance-table"><thead><tr><th>Cliente</th><th>OS</th><th>Peças</th><th>Vendido</th></tr></thead><tbody>{reportTopClients.map(client => <tr key={client.name}><td><b>{client.name}</b></td><td>{client.orders}</td><td>{client.pieces.toLocaleString('pt-BR')}</td><td>{money(client.revenue)}</td></tr>)}</tbody></table></div> : <Empty text="Nenhum cliente no período." />}
+              </div>
+            </section>
             <section className="panel"><div className="panel-head"><div><h3>Resumo mensal — últimos 6 meses</h3><p className="muted">Valores de recebimento e gastos datados. Vendas consideram OS criadas no mês.</p></div></div><div className="table-wrap"><table className="finance-table"><thead><tr><th>Mês</th><th>Vendido</th><th>Recebido</th><th>Custos diretos</th><th>Despesas gerais</th><th>Resultado de caixa*</th></tr></thead><tbody>{reportMonths.map(month=><tr key={month.key}><td><b>{month.label}</b></td><td>{money(month.revenue)}</td><td>{money(month.received)}</td><td>{money(month.costs)}</td><td>{money(month.general)}</td><td><strong className={month.result<0?'finance-balance':''}>{money(month.result)}</strong></td></tr>)}</tbody></table></div><p className="muted">*Resultado estimado: recebimentos registrados individualmente menos custos diretos e despesas lançados no mesmo mês. Não inclui recebimentos antigos sem data individual.</p></section>
             <section className="panel"><div className="panel-head"><div><h3>OS com melhor resultado bruto</h3><p className="muted">Cálculo por OS: valor vendido menos custos diretos registrados. Despesas gerais não são rateadas entre pedidos.</p></div></div><div className="table-wrap"><table className="finance-table"><thead><tr><th>OS</th><th>Cliente</th><th>Venda</th><th>Custo direto</th><th>Lucro bruto</th><th>Margem</th></tr></thead><tbody>{[...profitOrders].sort((a,b)=>b.profit-a.profit).slice(0,10).map(order=><tr key={order.id}><td>#{String(order.number).padStart(5,'0')}</td><td>{order.clients?.name||'—'}</td><td>{money(order.total)}</td><td>{money(order.costTotal)}</td><td>{money(order.profit)}</td><td>{order.margin.toFixed(1).replace('.',',')}%</td></tr>)}</tbody></table>{!profitOrders.length&&<Empty text="Ainda não há dados para este relatório."/>}</div></section>
           </>
@@ -1613,6 +1687,7 @@ function App() {
                       {client.email || 'Sem e-mail'}
                     </small>
                   </div>
+                  <button className="secondary small" onClick={() => setProfileClient(client)}><History size={13}/> Histórico</button>
                   <button
                     className="secondary small"
                     onClick={() => openClient(client)}
@@ -1676,8 +1751,31 @@ function App() {
           </section>
         )}
 
-        <footer>KALANGO CONFECÇÃO Gestão <span>·</span> Versão 1.0.1</footer>
+        <footer>DCS CONFECÇÃO Gestão <span>·</span> Versão 1.4</footer>
       </main>
+
+      {profileClient && (
+        <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setProfileClient(null)}}>
+          <div className="modal crm-profile-modal"><div className="modal-head"><div><p className="eyebrow">RELACIONAMENTO COM CLIENTE</p><h3>{profileClient.name}</h3></div><button className="icon-btn" onClick={()=>setProfileClient(null)}><X/></button></div>
+            {(() => { const history = orders.filter(o=>o.client_id===profileClient.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)); const total=history.reduce((sum,o)=>sum+Number(o.total||0),0); const bought=history.filter(o=>['Aprovada','Em produção','Concluída','Entregue'].includes(o.status)).length; return <>
+              <div className="crm-summary"><div><small>Pedidos</small><b>{history.length}</b></div><div><small>Pedidos aprovados</small><b>{bought}</b></div><div><small>Valor contratado</small><b>{money(total)}</b></div></div>
+              <h4>Histórico de pedidos</h4>{history.length ? <div className="table-wrap"><table><thead><tr><th>OS</th><th>Data</th><th>Status</th><th>Valor</th><th>Ação</th></tr></thead><tbody>{history.map(o=><tr key={o.id}><td>#{String(o.number).padStart(5,'0')}</td><td>{dateBR(o.created_at?.slice(0,10))}</td><td>{o.status}</td><td>{money(o.total)}</td><td><button className="secondary small" onClick={()=>{setProfileClient(null);editOrder(o)}}>Abrir</button></td></tr>)}</tbody></table></div> : <Empty text="Este cliente ainda não possui pedidos."/>}
+              <div className="form-actions"><button className="secondary" onClick={()=>{setProfileClient(null);openClient(profileClient)}}>Editar cadastro</button><button className="primary" onClick={()=>{setProfileClient(null);openOrder();setOrderForm(f=>({...f,client_id:profileClient.id}))}}>Novo orçamento / OS</button></div>
+            </> })()}
+          </div>
+        </div>
+      )}
+
+      {selectedQuote && (
+        <div className="quote-print-sheet">
+          <div className="print-controls"><button className="secondary" onClick={()=>window.print()}><Printer size={15}/> Imprimir / salvar PDF</button><button className="secondary" onClick={()=>setSelectedQuote(null)}>Fechar</button></div>
+          <div className="quote-document"><header><div className="brand-mark">D</div><div><h1>DCS CONFECÇÃO</h1><p>ORÇAMENTO DE CONFECÇÃO</p></div><strong>#{String(selectedQuote.number).padStart(5,'0')}</strong></header>
+            <div className="quote-client"><b>Cliente: </b>{selectedQuote.clients?.name || '—'}<br/><b>Contato: </b>{selectedQuote.clients?.phone || selectedQuote.clients?.whatsapp || '—'}<br/><b>Data: </b>{dateBR(selectedQuote.created_at?.slice(0,10))}<br/><b>Previsão: </b>{dateBR(selectedQuote.due_date)}</div>
+            <table><thead><tr><th>Descrição</th><th>Qtd.</th><th>Valor unit.</th><th>Total</th></tr></thead><tbody>{(selectedQuote.work_order_items||[]).map((it,i)=><tr key={i}><td>{it.description}</td><td>{getItemQuantity(it)}</td><td>{money(it.unit_price)}</td><td>{money(getItemQuantity(it)*Number(it.unit_price))}</td></tr>)}</tbody></table>
+            <div className="quote-total">Total do orçamento: <b>{money(selectedQuote.total)}</b></div><p className="quote-terms">Este orçamento está sujeito à aprovação do cliente. O prazo de produção começa após a aprovação e confirmação das condições combinadas.</p><div className="quote-sign">DCS CONFECÇÃO · Obrigado pela preferência!</div>
+          </div>
+        </div>
+      )}
 
       {modal && (
         <div
@@ -1689,7 +1787,7 @@ function App() {
           <div className="modal">
             <div className="modal-head">
               <div>
-                <p className="eyebrow">KALANGO CONFECÇÃO GESTÃO</p>
+                <p className="eyebrow">DCS CONFECÇÃO GESTÃO</p>
                 <h3>
                   {modal === 'client'
                     ? (editing ? 'Editar cliente' : 'Novo cliente')
@@ -2114,8 +2212,10 @@ function App() {
                           {
                             product_id: '',
                             description: '',
-                            quantity: 1,
-                            unit_price: 0
+                            quantity: 0,
+                            unit_price: 0,
+                            size_breakdown: {},
+                            legacyQuantity: false
                           }
                         ]
                       })}
@@ -2172,22 +2272,43 @@ function App() {
                         />
                       </label>
 
-                      <label>
-                        Quantidade
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={e => {
-                            const updated = [...orderForm.items]
-                            updated[index].quantity = e.target.value
-                            setOrderForm({
-                              ...orderForm,
-                              items: updated
-                            })
-                          }}
-                        />
-                      </label>
+                      <div className="size-grid-editor wide">
+                        <div className="size-grid-heading">
+                          <b>Grade de tamanhos</b>
+                          <strong>{getSizeTotal(item.size_breakdown) || (item.legacyQuantity ? Number(item.quantity) || 0 : 0)} peças</strong>
+                        </div>
+                        <div className="size-grid-fields">
+                          {sizeKeys.map(size => (
+                            <label key={size}>
+                              {size}
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                inputMode="numeric"
+                                placeholder="0"
+                                value={item.size_breakdown?.[size] ?? ''}
+                                onChange={e => {
+                                  const raw = e.target.value
+                                  const updated = [...orderForm.items]
+                                  updated[index] = {
+                                    ...updated[index],
+                                    size_breakdown: {
+                                      ...(updated[index].size_breakdown || {}),
+                                      [size]: raw === '' ? '' : Math.max(0, Math.floor(Number(raw) || 0))
+                                    },
+                                    legacyQuantity: false
+                                  }
+                                  setOrderForm({ ...orderForm, items: updated })
+                                }}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                        {item.legacyQuantity && !getSizeTotal(item.size_breakdown) && (
+                          <small className="legacy-size-note">Item antigo sem grade registrada. A quantidade já salva será preservada até você informar os tamanhos.</small>
+                        )}
+                      </div>
 
                       <label>
                         Valor unitário
@@ -2230,20 +2351,6 @@ function App() {
 
                   <div className="form-grid">
                     <label>
-                      Modelo da peça
-                      <input
-                        value={orderForm.production.garmentModel}
-                        onChange={e => setOrderForm({
-                          ...orderForm,
-                          production: {
-                            ...orderForm.production,
-                            garmentModel: e.target.value
-                          }
-                        })}
-                      />
-                    </label>
-
-                    <label>
                       Tecido
                       <input
                         value={orderForm.production.fabric}
@@ -2254,21 +2361,6 @@ function App() {
                             fabric: e.target.value
                           }
                         })}
-                      />
-                    </label>
-
-                    <label>
-                      Cor da peça
-                      <input
-                        value={orderForm.production.fabricColor}
-                        onChange={e => setOrderForm({
-                          ...orderForm,
-                          production: {
-                            ...orderForm.production,
-                            fabricColor: e.target.value
-                          }
-                        })}
-                        placeholder="Ex.: preta"
                       />
                     </label>
 
@@ -2294,21 +2386,6 @@ function App() {
                           <option key={method}>{method}</option>
                         ))}
                       </select>
-                    </label>
-
-                    <label className="wide">
-                      Grade de tamanhos
-                      <input
-                        value={orderForm.production.sizes}
-                        onChange={e => setOrderForm({
-                          ...orderForm,
-                          production: {
-                            ...orderForm.production,
-                            sizes: e.target.value
-                          }
-                        })}
-                        placeholder="Ex.: PP 2, P 5, M 10, G 8, GG 5"
-                      />
                     </label>
 
                     <label className="wide">
@@ -2457,13 +2534,7 @@ function App() {
                     <div>
                       <span>Valor total da OS</span>
                       <strong>
-                        {money(orderForm.items.reduce(
-                          (sum, item) =>
-                            sum +
-                            (Number(item.quantity) || 0) *
-                            (Number(item.unit_price) || 0),
-                          0
-                        ))}
+                        {money(getOrderItemsTotal(orderForm.items))}
                       </strong>
                     </div>
 
@@ -2478,13 +2549,7 @@ function App() {
                           <strong>
                             {money(Math.max(
                               0,
-                              orderForm.items.reduce(
-                                (sum, item) =>
-                                  sum +
-                                  (Number(item.quantity) || 0) *
-                                  (Number(item.unit_price) || 0),
-                                0
-                              ) - Number(editing.amount_paid || 0)
+                              getOrderItemsTotal(orderForm.items) - Number(editing.amount_paid || 0)
                             ))}
                           </strong>
                         </div>
@@ -2513,13 +2578,7 @@ function App() {
                 <div className="order-total wide">
                   <span>Total calculado</span>
                   <b>
-                    {money(orderForm.items.reduce(
-                      (sum, item) =>
-                        sum +
-                        Number(item.quantity || 0) *
-                        Number(item.unit_price || 0),
-                      0
-                    ))}
+                    {money(getOrderItemsTotal(orderForm.items))}
                   </b>
                 </div>
 
@@ -2602,9 +2661,9 @@ function App() {
           </div>
 
           <div className="print-head">
-            <div className="brand-mark">K</div>
+            <div className="brand-mark">D</div>
             <div>
-              <h1>KALANGO CONFECÇÃO</h1>
+              <h1>DCS CONFECÇÃO</h1>
               <p>FICHA DE PRODUÇÃO · ORDEM DE SERVIÇO</p>
             </div>
             <strong>
@@ -2642,49 +2701,50 @@ function App() {
             </div>
           </div>
 
-          <h2>Itens e quantidades</h2>
-          <table>
+          <h2>Itens, grade e quantidades</h2>
+          <table className="print-items-table">
             <thead>
               <tr>
                 <th>Produto / descrição</th>
-                <th>Quantidade</th>
-                <th>Valor unit.</th>
+                {sizeKeys.map(size => <th key={size}>{size}</th>)}
                 <th>Total</th>
+                <th>Valor unit.</th>
+                <th>Total item</th>
               </tr>
             </thead>
             <tbody>
               {(selectedOrder.work_order_items || []).map((item, index) => (
                 <tr key={index}>
                   <td>{item.description}</td>
-                  <td>{item.quantity}</td>
+                  {sizeKeys.map(size => <td key={size}>{Number(item.size_breakdown?.[size]) > 0 ? item.size_breakdown[size] : '—'}</td>)}
+                  <td><b>{getItemQuantity(item)}</b></td>
                   <td>{money(item.unit_price)}</td>
-                  <td>{money(Number(item.quantity) * Number(item.unit_price))}</td>
+                  <td>{money(getItemQuantity(item) * Number(item.unit_price))}</td>
                 </tr>
               ))}
+              <tr className="print-total-row">
+                <td><b>TOTAL DE PEÇAS</b></td>
+                {sizeKeys.map(size => <td key={size}><b>{(selectedOrder.work_order_items || []).reduce((sum, item) => sum + (Number(item.size_breakdown?.[size]) || 0), 0) || '—'}</b></td>)}
+                <td><b>{(selectedOrder.work_order_items || []).reduce((sum, item) => sum + getItemQuantity(item), 0)}</b></td>
+                <td>—</td>
+                <td><b>{money((selectedOrder.work_order_items || []).reduce((sum, item) => sum + getItemQuantity(item) * Number(item.unit_price), 0))}</b></td>
+              </tr>
             </tbody>
           </table>
 
           <h2>Especificações de produção</h2>
           <div className="print-grid">
             <div>
-              <b>Modelo</b>
-              <span>{selectedOrder.production_details?.garmentModel || '—'}</span>
-            </div>
-            <div>
               <b>Tecido</b>
               <span>{selectedOrder.production_details?.fabric || '—'}</span>
-            </div>
-            <div>
-              <b>Cor da peça</b>
-              <span>{selectedOrder.production_details?.fabricColor || '—'}</span>
             </div>
             <div>
               <b>Técnica</b>
               <span>{selectedOrder.production_details?.printTechnique || '—'}</span>
             </div>
             <div>
-              <b>Grade de tamanhos</b>
-              <span>{selectedOrder.production_details?.sizes || '—'}</span>
+              <b>Etapa atual</b>
+              <span>{getProductionStage(selectedOrder)}</span>
             </div>
             <div>
               <b>Quantidade por cor</b>
@@ -2723,6 +2783,24 @@ function App() {
             </>
           )}
 
+          <h2>Conferência da produção</h2>
+          <div className="print-checklist">
+            {['Separação das peças', 'Preparação das telas / arquivos', 'Estamparia', 'Acabamento', 'Conferência de tamanhos e quantidades', 'Embalagem'].map(step => (
+              <div key={step}><span className="print-check-box" />{step}</div>
+            ))}
+          </div>
+          {selectedOrder.production_details?.stageHistory?.length > 0 && (
+            <>
+              <h2>Histórico das etapas</h2>
+              <table className="print-history-table">
+                <thead><tr><th>Etapa concluída</th><th>Início registrado</th><th>Conclusão</th><th>Duração</th></tr></thead>
+                <tbody>{selectedOrder.production_details.stageHistory.map((entry, index) => (
+                  <tr key={index}><td>{entry.stage}</td><td>{entry.startedAt ? new Date(entry.startedAt).toLocaleString('pt-BR') : 'Não registrado'}</td><td>{new Date(entry.endedAt).toLocaleString('pt-BR')}</td><td>{entry.durationMinutes == null ? '—' : formatDuration(entry.durationMinutes)}</td></tr>
+                ))}</tbody>
+              </table>
+            </>
+          )}
+
           <div className="print-notes">
             <b>Observações</b>
             <p>{selectedOrder.notes || ' '}</p>
@@ -2733,6 +2811,70 @@ function App() {
             <div>Produção: ______________________________</div>
             <div>Conferência final: _______________________</div>
           </div>
+
+          <section className="cut-sheet-page">
+            <div className="print-head">
+              <div className="brand-mark">D</div>
+              <div>
+                <h1>DCS CONFECÇÃO</h1>
+                <p>FICHA DE CORTE · SEPARAÇÃO DE QUANTIDADES</p>
+              </div>
+              <strong>OS #{String(selectedOrder.number).padStart(5, '0')}</strong>
+            </div>
+
+            <div className="cut-sheet-identification">
+              <div><b>Cliente:</b> {selectedOrder.clients?.name || 'Não informado'}</div>
+              <div><b>Data:</b> {dateBR(selectedOrder.created_at?.slice(0, 10))}</div>
+              <div><b>Entrega:</b> {dateBR(selectedOrder.due_date)}</div>
+            </div>
+
+            <h2>Separação por produto e tamanho</h2>
+            <table className="print-items-table cut-items-table">
+              <thead>
+                <tr>
+                  <th>Produto / descrição</th>
+                  {sizeKeys.map(size => <th key={size}>{size}</th>)}
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(selectedOrder.work_order_items || []).map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.description || `Produto ${index + 1}`}</td>
+                    {sizeKeys.map(size => <td key={size}>{Number(item.size_breakdown?.[size]) > 0 ? item.size_breakdown[size] : '—'}</td>)}
+                    <td><b>{getItemQuantity(item)}</b></td>
+                  </tr>
+                ))}
+                <tr className="print-total-row">
+                  <td><b>TOTAL GERAL</b></td>
+                  {sizeKeys.map(size => <td key={size}><b>{(selectedOrder.work_order_items || []).reduce((sum, item) => sum + (Number(item.size_breakdown?.[size]) || 0), 0) || '—'}</b></td>)}
+                  <td><b>{(selectedOrder.work_order_items || []).reduce((sum, item) => sum + getItemQuantity(item), 0)}</b></td>
+                </tr>
+              </tbody>
+            </table>
+
+            {(selectedOrder.work_order_items || []).some(item => item.legacyQuantity && !getSizeTotal(item.size_breakdown)) && (
+              <p className="cut-legacy-note">Atenção: há item(ns) sem grade de tamanhos cadastrada. A quantidade total foi mantida, mas precisa ser distribuída/conferida manualmente no corte.</p>
+            )}
+
+            <h2>Conferência do corte</h2>
+            <div className="cut-checklist">
+              <div><span className="print-check-box" /> Quantidades conferidas com a OS</div>
+              <div><span className="print-check-box" /> Tamanhos separados</div>
+              <div><span className="print-check-box" /> Peças cortadas</div>
+              <div><span className="print-check-box" /> Pacotes identificados por produto</div>
+            </div>
+
+            <div className="cut-notes">
+              <b>Observações do corte</b>
+              <div></div><div></div>
+            </div>
+            <div className="cut-signatures">
+              <span>Responsável pelo corte: ______________________________</span>
+              <span>Conferido por: ________________________________________</span>
+              <span>Data: ____/____/________</span>
+            </div>
+          </section>
         </div>
       )}
     </div>
@@ -2743,8 +2885,8 @@ function SetupScreen() {
   return (
     <div className="setup-wrap">
       <div className="setup-card">
-        <div className="brand-mark">K</div>
-        <p className="eyebrow">KALANGO CONFECÇÃO</p>
+        <div className="brand-mark">D</div>
+        <p className="eyebrow">DCS CONFECÇÃO</p>
         <h1>Configuração inicial</h1>
         <p>
           Crie o arquivo <b>.env</b> na pasta do projeto e informe as credenciais
@@ -2802,7 +2944,9 @@ function OrderTable({
   onMockup,
   onEdit,
   onDelete,
-  onPayments
+  onPayments,
+  onMessage,
+  onTracking
 }) {
   return (
     <div className="table-wrap">
@@ -2899,6 +3043,8 @@ function OrderTable({
 
                 <td>
                   <div className="order-actions">
+                    <button className="secondary small" title="Enviar atualização pelo WhatsApp" onClick={() => onMessage(order)}><MessageCircle size={13}/> WhatsApp</button>
+                    <button className="secondary small" title="Copiar link de acompanhamento" onClick={() => onTracking(order)}><Link2 size={13}/> Link</button>
                     <button
                       className="secondary small"
                       title="Histórico e registro de recebimentos"
